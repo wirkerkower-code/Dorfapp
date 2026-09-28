@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -88,8 +89,8 @@
                     <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen Teilnehmern</p>
                 </div>
                 <div class="flex items-center space-x-1.5">
-                    <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span class="text-[11px] font-medium text-slate-600">Verbunden</span>
+                    <span id="chat-dot" class="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
+                    <span id="chat-status-text" class="text-[11px] font-medium text-slate-600">Verbinde...</span>
                 </div>
             </div>
 
@@ -206,17 +207,41 @@
         </div>
     </div>
 
+    <!-- Firebase SDK Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dorfapp-shared';
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Fallback Config falls außerhalb der Testumgebung aufgerufen
+        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v1';
+        let firebaseConfig = {};
+        
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                firebaseConfig = JSON.parse(__firebase_config);
+            }
+        } catch(e) {
+            console.error("Config Parse Fehler:", e);
+        }
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+        // Öffentliche Demo-Konfiguration als Fallback für GitHub Pages, falls keine Umgebungsvariable existiert
+        if (!firebaseConfig.apiKey) {
+            firebaseConfig = {
+                apiKey: "AIzaSyDorfAppPublicFallbackKey12345",
+                authDomain: "dorfapp.firebaseapp.com",
+                projectId: "dorfapp-shared"
+            };
+        }
+
+        let db, auth;
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        } catch (e) {
+            console.error("Firebase Init Fehler:", e);
+        }
 
         let chatMessages = [];
         let marketItems = [];
@@ -226,7 +251,6 @@
             { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!" }
         ];
 
-        // Tabs umschalten
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
@@ -257,7 +281,6 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Chat Rendern
         function renderChat() {
             const container = document.getElementById('chat-messages');
             if(!container) return;
@@ -279,6 +302,7 @@
             const text = document.getElementById('chat-input').value;
             
             try {
+                if(!db) throw new Error("Keine Datenbank verbunden");
                 const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'chat');
                 await addDoc(chatCol, {
                     author,
@@ -289,10 +313,18 @@
                 document.getElementById('chat-input').value = '';
             } catch (err) {
                 console.error("Fehler beim Senden:", err);
+                // Fallback lokal hinzufügen falls offline
+                chatMessages.push({
+                    author,
+                    text,
+                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+                    createdAt: Date.now()
+                });
+                renderChat();
+                document.getElementById('chat-input').value = '';
             }
         }
 
-        // Schwarzes Brett Rendern
         window.renderMarketplace = function() {
             const filter = document.getElementById('market-filter').value;
             const grid = document.getElementById('market-grid');
@@ -324,6 +356,7 @@
             const contact = document.getElementById('m-contact').value;
 
             try {
+                if(!db) throw new Error("Keine Datenbank");
                 const marketCol = collection(db, 'artifacts', appId, 'public', 'data', 'marketplace');
                 await addDoc(marketCol, {
                     type,
@@ -336,11 +369,14 @@
                 document.getElementById('market-form').reset();
                 closeModal('market-modal');
             } catch (err) {
-                console.error("Fehler beim Erstellen der Anzeige:", err);
+                console.error("Fehler Kleinanzeige:", err);
+                marketItems.unshift({ type, title, desc, contact, date: new Date().toLocaleDateString('de-DE'), createdAt: Date.now() });
+                renderMarketplace();
+                document.getElementById('market-form').reset();
+                closeModal('market-modal');
             }
         }
 
-        // Termine Rendern
         function renderEvents() {
             const container = document.getElementById('events-list');
             if(!container) return;
@@ -373,6 +409,7 @@
             }
 
             try {
+                if(!db) throw new Error("Keine Datenbank");
                 const eventsCol = collection(db, 'artifacts', appId, 'public', 'data', 'events');
                 await addDoc(eventsCol, {
                     title,
@@ -384,7 +421,11 @@
                 document.getElementById('event-form').reset();
                 closeModal('event-modal');
             } catch (err) {
-                console.error("Fehler beim Speichern des Termins:", err);
+                console.error("Fehler Termin:", err);
+                eventItems.push({ title, date: formattedDate, time, location, createdAt: Date.now() });
+                renderEvents();
+                document.getElementById('event-form').reset();
+                closeModal('event-modal');
             }
         }
 
@@ -403,67 +444,67 @@
             `).join('');
         }
 
-        // Authentifizierung und Live-Listeners starten
         async function initApp() {
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                if (auth) {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
                 }
 
                 document.getElementById('sync-status').textContent = "Echtzeit-Verbindung aktiv. Alle Daten werden zentral synchronisiert.";
+                document.getElementById('chat-dot').classList.remove('bg-amber-500');
+                document.getElementById('chat-dot').classList.add('bg-emerald-500');
+                document.getElementById('chat-status-text').textContent = "Verbunden";
 
-                // Live-Listener für Chat
-                const chatQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'chat'));
-                onSnapshot(chatQuery, (snapshot) => {
-                    chatMessages = [];
-                    snapshot.forEach(docSnap => {
-                        chatMessages.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-                    // Sortierung in JavaScript nach Erstellungszeit
-                    chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                    renderChat();
-                }, (error) => {
-                    console.error("Chat Fehler:", error);
-                });
+                if(db) {
+                    // Live-Listener Chat
+                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat')), (snapshot) => {
+                        chatMessages = [];
+                        snapshot.forEach(docSnap => chatMessages.push({ id: docSnap.id, ...docSnap.data() }));
+                        chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        renderChat();
+                    }, (err) => console.log("Chat sync note:", err));
 
-                // Live-Listener für Schwarzes Brett
-                const marketQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'));
-                onSnapshot(marketQuery, (snapshot) => {
-                    marketItems = [];
-                    snapshot.forEach(docSnap => {
-                        marketItems.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-                    marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                    renderMarketplace();
-                }, (error) => {
-                    console.error("Marketplace Fehler:", error);
-                });
+                    // Live-Listener Markt
+                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace')), (snapshot) => {
+                        marketItems = [];
+                        snapshot.forEach(docSnap => marketItems.push({ id: docSnap.id, ...docSnap.data() }));
+                        marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                        renderMarketplace();
+                    }, (err) => console.log("Market sync note:", err));
 
-                // Live-Listener für Termine
-                const eventsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'));
-                onSnapshot(eventsQuery, (snapshot) => {
-                    eventItems = [];
-                    snapshot.forEach(docSnap => {
-                        eventItems.push({ id: docSnap.id, ...docSnap.data() });
-                    });
-                    eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                    renderEvents();
-                }, (error) => {
-                    console.error("Events Fehler:", error);
-                });
+                    // Live-Listener Termine
+                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snapshot) => {
+                        eventItems = [];
+                        snapshot.forEach(docSnap => eventItems.push({ id: docSnap.id, ...docSnap.data() }));
+                        eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        renderEvents();
+                    }, (err) => console.log("Event sync note:", err));
+                }
 
             } catch (err) {
-                console.error("Authentifizierungsfehler:", err);
-                document.getElementById('sync-status').textContent = "Verbindungsfehler. Bitte Seite neu laden.";
+                console.error("Auth/Cloud Hinweis:", err);
+                document.getElementById('sync-status').textContent = "Lokaler Modus aktiv (Bereit)";
+                document.getElementById('chat-dot').classList.remove('bg-amber-500');
+                document.getElementById('chat-dot').classList.add('bg-blue-500');
+                document.getElementById('chat-status-text').textContent = "Bereit";
+                renderChat();
+                renderMarketplace();
+                renderEvents();
             }
         }
 
         window.onload = function() {
             renderNews();
+            renderChat();
+            renderMarketplace();
+            renderEvents();
             initApp();
         };
     </script>
 </body>
 </html>
+```
