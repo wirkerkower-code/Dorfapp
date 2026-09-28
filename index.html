@@ -14,7 +14,7 @@
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
-   
+
     <header class="bg-emerald-700 text-white shadow-sm sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -23,7 +23,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold tracking-tight">Dorf-Treffpunkt</h1>
-                    <p class="text-[11px] text-emerald-200">Gemeinsam verbunden im Ort</p>
+                    <p class="text-[11px] text-emerald-200">Zentral verbunden im Ort</p>
                 </div>
             </div>
             <!-- Navigation Tabs -->
@@ -42,9 +42,9 @@
         <section id="section-feed" class="tab-content space-y-5">
             <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
                 <div class="relative z-10 max-w-2xl">
-                    <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Neuigkeiten aus dem Ort</span>
-                    <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer Dorfgemeinschaft!</h2>
-                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Hier finden Sie alle aktuellen Informationen, können sich austauschen, Gegenstände suchen oder anbieten und verpassen kein Dorffest mehr.</p>
+                    <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Echtzeit-Dorfnetzwerk</span>
+                    <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer vernetzten Dorfgemeinschaft!</h2>
+                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Alle Beiträge, Chatnachrichten und Kleinanzeigen sind jetzt für alle Dorfbewohner in Echtzeit synchronisiert.</p>
                 </div>
             </div>
 
@@ -71,9 +71,9 @@
                     </div>
 
                     <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-                        <h4 class="font-bold text-emerald-900 mb-1 text-xs">💡 JimdoFree Tipp</h4>
-                        <p class="text-[11px] text-emerald-800 leading-relaxed">
-                            Dieses Widget ist nun extrem schlank und lädt sofort, ohne externe Schriften-Blockaden.
+                        <h4 class="font-bold text-emerald-900 mb-1 text-xs">🟢 Live-Status</h4>
+                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">
+                            Verbindung zur Cloud wird aufgebaut...
                         </p>
                     </div>
                 </div>
@@ -84,12 +84,12 @@
         <section id="section-chat" class="tab-content hidden flex flex-col h-[70vh] bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
             <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
                 <div>
-                    <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch</h3>
-                    <p class="text-[11px] text-slate-500">Der offene Treffpunkt zum Plaudern</p>
+                    <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch (Live)</h3>
+                    <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen Teilnehmern</p>
                 </div>
                 <div class="flex items-center space-x-1.5">
                     <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                    <span class="text-[11px] font-medium text-slate-600">Online</span>
+                    <span class="text-[11px] font-medium text-slate-600">Verbunden</span>
                 </div>
             </div>
 
@@ -107,7 +107,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
                 <div>
                     <h3 class="text-base font-bold text-slate-800">Schwarzes Brett: Suche & Biete</h3>
-                    <p class="text-[11px] text-slate-500">Der digitale Kleinanzeigenmarkt</p>
+                    <p class="text-[11px] text-slate-500">Zentrale Kleinanzeigen für alle im Ort</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
                     <select id="market-filter" onchange="renderMarketplace()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
@@ -127,7 +127,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
                 <div>
                     <h3 class="text-base font-bold text-slate-800">Dorf-Termine & Veranstaltungen</h3>
-                    <p class="text-[11px] text-slate-500">Vereinsfeste, Treffen und Müllabfuhr</p>
+                    <p class="text-[11px] text-slate-500">Gemeinsame Termine für das ganze Dorf</p>
                 </div>
                 <button onclick="openModal('event-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">+ Termin</button>
             </div>
@@ -206,30 +206,28 @@
         </div>
     </div>
 
-    <script>
-        // Lokaler Speicher & Initialdaten (Speicherung im localStorage für nahtlose Persistenz)
-        let chatMessages = JSON.parse(localStorage.getItem('dorf_chat')) || [
-            { author: "Bürgermeister Schmidt", text: "Hallo liebe Dorfbewohner, willkommen in unserer neuen, superschnellen Dorf-App!", time: "Gestern" },
-            { author: "Anna Becker", text: "Endlich lädt alles direkt und ohne Wartezeit!", time: "Heute" }
-        ];
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        let marketItems = JSON.parse(localStorage.getItem('dorf_market')) || [
-            { id: 1, type: "Biete", title: "Gartenfräse (Benzin)", desc: "Voll funktionsfähig, wird nicht mehr benötigt.", contact: "H. Weber, Tel. 4412", date: "26.09.2026" },
-            { id: 2, type: "Suche", title: "Hollandrad", desc: "Suche ein verkehrssicheres Rad.", contact: "Maria L.", date: "25.09.2026" }
-        ];
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dorfapp-shared';
+        const firebaseConfig = JSON.parse(__firebase_config);
 
-        let eventItems = JSON.parse(localStorage.getItem('dorf_events')) || [
-            { id: 1, title: "Osterfeuer Vorbereitung", date: "15.04.2026", time: "19:30", location: "Gasthaus 'Zum Krug'" },
-            { id: 2, title: "Frühjahrsputz im Dorf", date: "12.04.2026", time: "09:00", location: "Feuerwehrhaus" }
-        ];
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
 
+        let chatMessages = [];
+        let marketItems = [];
+        let eventItems = [];
         let newsItems = [
             { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen." },
             { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!" }
         ];
 
         // Tabs umschalten
-        function switchTab(tabId) {
+        window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.tab-btn').forEach(el => {
                 el.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
@@ -246,18 +244,28 @@
             }
         }
 
-        // Modals
-        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); }
+        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
 
-        // Chat
+        function scrollToBottom() {
+            const container = document.getElementById('chat-messages');
+            if(container) container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            if(!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Chat Rendern
         function renderChat() {
             const container = document.getElementById('chat-messages');
+            if(!container) return;
             container.innerHTML = chatMessages.map(m => `
                 <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100">
                     <div class="flex justify-between items-baseline mb-0.5">
                         <span class="font-bold text-[11px] text-emerald-800">${escapeHtml(m.author)}</span>
-                        <span class="text-[9px] text-slate-400">${m.time}</span>
+                        <span class="text-[9px] text-slate-400">${escapeHtml(m.time)}</span>
                     </div>
                     <p class="text-xs text-slate-700">${escapeHtml(m.text)}</p>
                 </div>
@@ -265,35 +273,38 @@
             scrollToBottom();
         }
 
-        function scrollToBottom() {
-            const container = document.getElementById('chat-messages');
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function handleChatSubmit(e) {
+        window.handleChatSubmit = async function(e) {
             e.preventDefault();
             const author = document.getElementById('chat-author').value;
             const text = document.getElementById('chat-input').value;
             
-            chatMessages.push({ author, text, time: "Gerade eben" });
-            localStorage.setItem('dorf_chat', JSON.stringify(chatMessages));
-
-            document.getElementById('chat-input').value = '';
-            renderChat();
+            try {
+                const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'chat');
+                await addDoc(chatCol, {
+                    author,
+                    text,
+                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
+                    createdAt: Date.now()
+                });
+                document.getElementById('chat-input').value = '';
+            } catch (err) {
+                console.error("Fehler beim Senden:", err);
+            }
         }
 
-        // Schwarzes Brett
-        function renderMarketplace() {
+        // Schwarzes Brett Rendern
+        window.renderMarketplace = function() {
             const filter = document.getElementById('market-filter').value;
             const grid = document.getElementById('market-grid');
+            if(!grid) return;
             const filtered = marketItems.filter(item => filter === 'all' || item.type === filter);
 
             grid.innerHTML = filtered.map(item => `
                 <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs">
                     <div>
                         <div class="flex justify-between items-start mb-1.5">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${item.type}</span>
-                            <span class="text-[9px] text-slate-400">${item.date}</span>
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${escapeHtml(item.type)}</span>
+                            <span class="text-[9px] text-slate-400">${escapeHtml(item.date)}</span>
                         </div>
                         <h4 class="font-bold text-slate-800 mb-1">${escapeHtml(item.title)}</h4>
                         <p class="text-[11px] text-slate-600 mb-3 leading-relaxed">${escapeHtml(item.desc)}</p>
@@ -305,29 +316,39 @@
             `).join('');
         }
 
-        function handleMarketSubmit(e) {
+        window.handleMarketSubmit = async function(e) {
             e.preventDefault();
             const type = document.getElementById('m-type').value;
             const title = document.getElementById('m-title').value;
             const desc = document.getElementById('m-desc').value;
             const contact = document.getElementById('m-contact').value;
 
-            marketItems.unshift({ id: Date.now(), type, title, desc, contact, date: new Date().toLocaleDateString('de-DE') });
-            localStorage.setItem('dorf_market', JSON.stringify(marketItems));
-            
-            document.getElementById('market-form').reset();
-            closeModal('market-modal');
-            renderMarketplace();
+            try {
+                const marketCol = collection(db, 'artifacts', appId, 'public', 'data', 'marketplace');
+                await addDoc(marketCol, {
+                    type,
+                    title,
+                    desc,
+                    contact,
+                    date: new Date().toLocaleDateString('de-DE'),
+                    createdAt: Date.now()
+                });
+                document.getElementById('market-form').reset();
+                closeModal('market-modal');
+            } catch (err) {
+                console.error("Fehler beim Erstellen der Anzeige:", err);
+            }
         }
 
-        // Termine
+        // Termine Rendern
         function renderEvents() {
             const container = document.getElementById('events-list');
+            if(!container) return;
             container.innerHTML = eventItems.map(ev => `
                 <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start gap-3 text-xs">
                     <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
                         <span class="block text-[9px] font-semibold uppercase">Datum</span>
-                        <span class="block text-xs font-bold">${ev.date.substring(0,5)}</span>
+                        <span class="block text-xs font-bold">${escapeHtml(ev.date.substring(0,5))}</span>
                     </div>
                     <div class="flex-grow">
                         <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
@@ -338,7 +359,7 @@
             `).join('');
         }
 
-        function handleEventSubmit(e) {
+        window.handleEventSubmit = async function(e) {
             e.preventDefault();
             const title = document.getElementById('e-title').value;
             const rawDate = document.getElementById('e-date').value;
@@ -351,21 +372,30 @@
                 if(parts.length === 3) formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
             }
 
-            eventItems.push({ id: Date.now(), title, date: formattedDate, time, location });
-            localStorage.setItem('dorf_events', JSON.stringify(eventItems));
-            
-            document.getElementById('event-form').reset();
-            closeModal('event-modal');
-            renderEvents();
+            try {
+                const eventsCol = collection(db, 'artifacts', appId, 'public', 'data', 'events');
+                await addDoc(eventsCol, {
+                    title,
+                    date: formattedDate,
+                    time,
+                    location,
+                    createdAt: Date.now()
+                });
+                document.getElementById('event-form').reset();
+                closeModal('event-modal');
+            } catch (err) {
+                console.error("Fehler beim Speichern des Termins:", err);
+            }
         }
 
-        // News
         function renderNews() {
-            document.getElementById('news-container').innerHTML = newsItems.map(n => `
+            const container = document.getElementById('news-container');
+            if(!container) return;
+            container.innerHTML = newsItems.map(n => `
                 <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
-                        <span class="text-[9px] text-slate-400">${n.date}</span>
+                        <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
                     </div>
                     <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
                     <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
@@ -373,15 +403,66 @@
             `).join('');
         }
 
-        function escapeHtml(str) {
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        // Authentifizierung und Live-Listeners starten
+        async function initApp() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                document.getElementById('sync-status').textContent = "Echtzeit-Verbindung aktiv. Alle Daten werden zentral synchronisiert.";
+
+                // Live-Listener für Chat
+                const chatQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'chat'));
+                onSnapshot(chatQuery, (snapshot) => {
+                    chatMessages = [];
+                    snapshot.forEach(docSnap => {
+                        chatMessages.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    // Sortierung in JavaScript nach Erstellungszeit
+                    chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                    renderChat();
+                }, (error) => {
+                    console.error("Chat Fehler:", error);
+                });
+
+                // Live-Listener für Schwarzes Brett
+                const marketQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'));
+                onSnapshot(marketQuery, (snapshot) => {
+                    marketItems = [];
+                    snapshot.forEach(docSnap => {
+                        marketItems.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    renderMarketplace();
+                }, (error) => {
+                    console.error("Marketplace Fehler:", error);
+                });
+
+                // Live-Listener für Termine
+                const eventsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'));
+                onSnapshot(eventsQuery, (snapshot) => {
+                    eventItems = [];
+                    snapshot.forEach(docSnap => {
+                        eventItems.push({ id: docSnap.id, ...docSnap.data() });
+                    });
+                    eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                    renderEvents();
+                }, (error) => {
+                    console.error("Events Fehler:", error);
+                });
+
+            } catch (err) {
+                console.error("Authentifizierungsfehler:", err);
+                document.getElementById('sync-status').textContent = "Verbindungsfehler. Bitte Seite neu laden.";
+            }
         }
 
         window.onload = function() {
             renderNews();
-            renderChat();
-            renderMarketplace();
-            renderEvents();
+            initApp();
         };
     </script>
 </body>
