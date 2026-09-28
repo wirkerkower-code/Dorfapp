@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unsere Dorf-App</title>
+    <!-- Tailwind CSS (CDN mitgeladen) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <header class="bg-emerald-700 text-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 p-2 rounded-xl border border-emerald-500">
+                    <svg class="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                </div>
+                <div>
+                    <h1 class="text-base font-bold tracking-tight">Dorf-Treffpunkt</h1>
+                    <p class="text-[11px] text-emerald-200">Gemeinsam verbunden im Ort</p>
+                </div>
+            </div>
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
+                <button onclick="switchTab('feed')" id="btn-feed" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800 text-white shadow-xs">Pinnwand</button>
+                <button onclick="switchTab('chat')" id="btn-chat" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Dorf-Chat</button>
+                <button onclick="switchTab('marketplace')" id="btn-marketplace" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Suche & Biete</button>
+                <button onclick="switchTab('events')" id="btn-events" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Termine</button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-5 flex-grow w-full grid grid-cols-1 gap-5">
+
+        <!-- 1. PINNWAND & NEUIGKEITEN -->
+        <section id="section-feed" class="tab-content space-y-5">
+            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
+                <div class="relative z-10 max-w-2xl">
+                    <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Neuigkeiten aus dem Ort</span>
+                    <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer Dorfgemeinschaft!</h2>
+                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Hier finden Sie alle aktuellen Informationen, können sich austauschen, Gegenstände suchen oder anbieten und verpassen kein Dorffest mehr.</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="md:col-span-2 space-y-3">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                        Orts-Nachrichten
+                    </h3>
+                    <div id="news-container" class="space-y-3"></div>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+                        <h4 class="font-bold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Gemeindebüro Info
+                        </h4>
+                        <div class="text-[11px] text-slate-600 space-y-1.5">
+                            <p><strong class="text-slate-700">Öffnungszeiten:</strong><br>Di: 09:00 - 12:00 | Do: 15:00 - 18:00</p>
+                            <p><strong class="text-slate-700">Bürgermeistersprechstunde:</strong><br>Donnerstag ab 17:00 Uhr</p>
+                            <p><strong class="text-slate-700">Bauhof-Notruf:</strong><br>0150-12345678</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
+                        <h4 class="font-bold text-emerald-900 mb-1 text-xs">💡 JimdoFree Tipp</h4>
+                        <p class="text-[11px] text-emerald-800 leading-relaxed">
+                            Dieses Widget ist nun extrem schlank und lädt sofort, ohne externe Schriften-Blockaden.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. CHAT BEREICH -->
+        <section id="section-chat" class="tab-content hidden flex flex-col h-[70vh] bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+            <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch</h3>
+                    <p class="text-[11px] text-slate-500">Der offene Treffpunkt zum Plaudern</p>
+                </div>
+                <div class="flex items-center space-x-1.5">
+                    <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                    <span class="text-[11px] font-medium text-slate-600">Online</span>
+                </div>
+            </div>
+
+            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-2.5 bg-slate-50/40"></div>
+
+            <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-2.5 bg-white border-t border-slate-200 flex gap-2">
+                <input type="text" id="chat-author" placeholder="Ihr Name" class="w-1/3 sm:w-1/4 px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                <input type="text" id="chat-input" placeholder="Nachricht schreiben..." class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Senden</button>
+            </form>
+        </section>
+
+        <!-- 3. SCHWARZES BRETT -->
+        <section id="section-marketplace" class="tab-content hidden space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Schwarzes Brett: Suche & Biete</h3>
+                    <p class="text-[11px] text-slate-500">Der digitale Kleinanzeigenmarkt</p>
+                </div>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <select id="market-filter" onchange="renderMarketplace()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        <option value="all">Alle Anzeigen</option>
+                        <option value="Biete">Biete</option>
+                        <option value="Suche">Suche</option>
+                    </select>
+                    <button onclick="openModal('market-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs whitespace-nowrap">+ Anzeige</button>
+                </div>
+            </div>
+
+            <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
+        </section>
+
+        <!-- 4. TERMINE -->
+        <section id="section-events" class="tab-content hidden space-y-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Dorf-Termine & Veranstaltungen</h3>
+                    <p class="text-[11px] text-slate-500">Vereinsfeste, Treffen und Müllabfuhr</p>
+                </div>
+                <button onclick="openModal('event-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">+ Termin</button>
+            </div>
+
+            <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </section>
+
+    </main>
+
+    <!-- MODAL KLEINANZEIGE -->
+    <div id="market-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-800">Neue Kleinanzeige aufgeben</h3>
+                <button onclick="closeModal('market-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
+            </div>
+            <form id="market-form" onsubmit="handleMarketSubmit(event)" class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Kategorie</label>
+                    <select id="m-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500">
+                        <option value="Biete">Biete</option>
+                        <option value="Suche">Suche</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Titel</label>
+                    <input type="text" id="m-title" placeholder="z.B. Kinderfahrrad" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Beschreibung</label>
+                    <textarea id="m-desc" rows="2" placeholder="Kurze Beschreibung..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required></textarea>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Kontakt</label>
+                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller, Tel. 1234" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                </div>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Veröffentlichen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL TERMIN -->
+    <div id="event-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-sm text-slate-800">Neuen Termin eintragen</h3>
+                <button onclick="closeModal('event-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
+            </div>
+            <form id="event-form" onsubmit="handleEventSubmit(event)" class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Veranstaltungstitel</label>
+                    <input type="text" id="e-title" placeholder="z.B. Feuerwehrversammlung" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Datum</label>
+                        <input type="date" id="e-date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-slate-700 mb-1">Uhrzeit</label>
+                        <input type="text" id="e-time" placeholder="19:00 Uhr" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-medium text-slate-700 mb-1">Ort</label>
+                    <input type="text" id="e-location" placeholder="Dorfgemeinschaftshaus" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                </div>
+                <div class="flex justify-end gap-2 pt-1">
+                    <button type="button" onclick="closeModal('event-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Lokaler Speicher & Initialdaten (Speicherung im localStorage für nahtlose Persistenz)
+        let chatMessages = JSON.parse(localStorage.getItem('dorf_chat')) || [
+            { author: "Bürgermeister Schmidt", text: "Hallo liebe Dorfbewohner, willkommen in unserer neuen, superschnellen Dorf-App!", time: "Gestern" },
+            { author: "Anna Becker", text: "Endlich lädt alles direkt und ohne Wartezeit!", time: "Heute" }
+        ];
+
+        let marketItems = JSON.parse(localStorage.getItem('dorf_market')) || [
+            { id: 1, type: "Biete", title: "Gartenfräse (Benzin)", desc: "Voll funktionsfähig, wird nicht mehr benötigt.", contact: "H. Weber, Tel. 4412", date: "26.09.2026" },
+            { id: 2, type: "Suche", title: "Hollandrad", desc: "Suche ein verkehrssicheres Rad.", contact: "Maria L.", date: "25.09.2026" }
+        ];
+
+        let eventItems = JSON.parse(localStorage.getItem('dorf_events')) || [
+            { id: 1, title: "Osterfeuer Vorbereitung", date: "15.04.2026", time: "19:30", location: "Gasthaus 'Zum Krug'" },
+            { id: 2, title: "Frühjahrsputz im Dorf", date: "12.04.2026", time: "09:00", location: "Feuerwehrhaus" }
+        ];
+
+        let newsItems = [
+            { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen." },
+            { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!" }
+        ];
+
+        // Tabs umschalten
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
+                el.classList.add('text-emerald-100', 'hover:bg-emerald-600');
+            });
+
+            document.getElementById('section-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
+            activeBtn.classList.remove('text-emerald-100', 'hover:bg-emerald-600');
+
+            if(tabId === 'chat') {
+                scrollToBottom();
+            }
+        }
+
+        // Modals
+        function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // Chat
+        function renderChat() {
+            const container = document.getElementById('chat-messages');
+            container.innerHTML = chatMessages.map(m => `
+                <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100">
+                    <div class="flex justify-between items-baseline mb-0.5">
+                        <span class="font-bold text-[11px] text-emerald-800">${escapeHtml(m.author)}</span>
+                        <span class="text-[9px] text-slate-400">${m.time}</span>
+                    </div>
+                    <p class="text-xs text-slate-700">${escapeHtml(m.text)}</p>
+                </div>
+            `).join('');
+            scrollToBottom();
+        }
+
+        function scrollToBottom() {
+            const container = document.getElementById('chat-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleChatSubmit(e) {
+            e.preventDefault();
+            const author = document.getElementById('chat-author').value;
+            const text = document.getElementById('chat-input').value;
+            
+            chatMessages.push({ author, text, time: "Gerade eben" });
+            localStorage.setItem('dorf_chat', JSON.stringify(chatMessages));
+
+            document.getElementById('chat-input').value = '';
+            renderChat();
+        }
+
+        // Schwarzes Brett
+        function renderMarketplace() {
+            const filter = document.getElementById('market-filter').value;
+            const grid = document.getElementById('market-grid');
+            const filtered = marketItems.filter(item => filter === 'all' || item.type === filter);
+
+            grid.innerHTML = filtered.map(item => `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs">
+                    <div>
+                        <div class="flex justify-between items-start mb-1.5">
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${item.type}</span>
+                            <span class="text-[9px] text-slate-400">${item.date}</span>
+                        </div>
+                        <h4 class="font-bold text-slate-800 mb-1">${escapeHtml(item.title)}</h4>
+                        <p class="text-[11px] text-slate-600 mb-3 leading-relaxed">${escapeHtml(item.desc)}</p>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        Kontakt: <strong class="text-slate-700">${escapeHtml(item.contact)}</strong>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleMarketSubmit(e) {
+            e.preventDefault();
+            const type = document.getElementById('m-type').value;
+            const title = document.getElementById('m-title').value;
+            const desc = document.getElementById('m-desc').value;
+            const contact = document.getElementById('m-contact').value;
+
+            marketItems.unshift({ id: Date.now(), type, title, desc, contact, date: new Date().toLocaleDateString('de-DE') });
+            localStorage.setItem('dorf_market', JSON.stringify(marketItems));
+            
+            document.getElementById('market-form').reset();
+            closeModal('market-modal');
+            renderMarketplace();
+        }
+
+        // Termine
+        function renderEvents() {
+            const container = document.getElementById('events-list');
+            container.innerHTML = eventItems.map(ev => `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start gap-3 text-xs">
+                    <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
+                        <span class="block text-[9px] font-semibold uppercase">Datum</span>
+                        <span class="block text-xs font-bold">${ev.date.substring(0,5)}</span>
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
+                        <p class="text-[11px] text-slate-500 mb-0.5">🕒 ${escapeHtml(ev.time)}</p>
+                        <p class="text-[11px] text-slate-600">📍 ${escapeHtml(ev.location)}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function handleEventSubmit(e) {
+            e.preventDefault();
+            const title = document.getElementById('e-title').value;
+            const rawDate = document.getElementById('e-date').value;
+            const time = document.getElementById('e-time').value;
+            const location = document.getElementById('e-location').value;
+
+            let formattedDate = rawDate;
+            if(rawDate) {
+                const parts = rawDate.split('-');
+                if(parts.length === 3) formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
+            }
+
+            eventItems.push({ id: Date.now(), title, date: formattedDate, time, location });
+            localStorage.setItem('dorf_events', JSON.stringify(eventItems));
+            
+            document.getElementById('event-form').reset();
+            closeModal('event-modal');
+            renderEvents();
+        }
+
+        // News
+        function renderNews() {
+            document.getElementById('news-container').innerHTML = newsItems.map(n => `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
+                        <span class="text-[9px] text-slate-400">${n.date}</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        window.onload = function() {
+            renderNews();
+            renderChat();
+            renderMarketplace();
+            renderEvents();
+        };
+    </script>
+</body>
+</html>
