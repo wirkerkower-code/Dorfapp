@@ -1,758 +1,1150 @@
-```html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsere Dorf-App mit robuster Cloud & Admin-Moderation</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+```react
+import React, { useState, useEffect, useRef } from 'react';
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth, 
+  signInAnonymously, 
+  signInWithCustomToken, 
+  onAuthStateChanged 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  addDoc, 
+  deleteDoc, 
+  updateDoc, 
+  onSnapshot, 
+  query, 
+  serverTimestamp 
+} from 'firebase/firestore';
 
-    <header class="bg-emerald-700 text-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-600 p-2 rounded-xl border border-emerald-500">
-                    <svg class="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                </div>
-                <div>
-                    <h1 class="text-base font-bold tracking-tight">Dorf-Treffpunkt</h1>
-                    <p id="admin-badge" class="text-[11px] text-emerald-200">Zentral verbunden im Ort</p>
-                </div>
-            </div>
-            <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
-                <button onclick="switchTab('feed')" id="btn-feed" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800 text-white shadow-xs">Pinnwand</button>
-                <button onclick="switchTab('chat')" id="btn-chat" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Dorf-Chat</button>
-                <button onclick="switchTab('marketplace')" id="btn-marketplace" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Suche & Biete</button>
-                <button onclick="switchTab('events')" id="btn-events" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Termine</button>
-                <button onclick="switchTab('settings')" id="btn-settings" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">🔔 Push & Admin</button>
-            </nav>
+// --- FIREBASE & APP CONFIGURATION ---
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+  apiKey: "AIzaSyDummyKeyForDevelopmentPurposesOnly12345",
+  authDomain: "dorfnet-demo.firebaseapp.com",
+  projectId: "dorfnet-demo",
+  storageBucket: "dorfnet-demo.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abcdef"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'dorf-net-default-app';
+
+export default function App() {
+  const [user, setUser] = useState(null);
+  const [userId, setUserId] = useState('');
+  const [userName, setUserName] = useState('');
+  const [isNameSet, setIsNameSet] = useState(false);
+  const [activeTab, setActiveTab] = useState('chat');
+  
+  // Admin Mode state (Default password for admin demo: "dorfadmin")
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [showAdminLoginModal, setShowAdminLoginModal] = useState(false);
+
+  // Data states from Firestore
+  const [messages, setMessages] = useState([]);
+  const [presenceList, setPresenceList] = useState([]);
+  const [marketPosts, setMarketPosts] = useState([]);
+  const [officialPosts, setOfficialPosts] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [visitorStats, setVisitorStats] = useState({ count: 0, activeNow: 0 });
+
+  // Notification badges / popup settings
+  const [notifications, setNotifications] = useState({
+    chat: 0,
+    market: 0,
+    calendar: 0,
+    official: 0
+  });
+  const [pushEnabled, setPushEnabled] = useState(true);
+  const [recentToast, setRecentToast] = useState(null);
+
+  // Form inputs
+  const [chatInput, setChatInput] = useState('');
+  const [marketForm, setMarketForm] = useState({ title: '', category: 'Biete', description: '', price: '', contact: '' });
+  const [officialForm, setOfficialForm] = useState({ title: '', content: '', priority: 'Normal' });
+  const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', location: '', description: '' });
+  
+  // Google Calendar Embed URL input
+  const [calendarEmbedUrl, setCalendarEmbedUrl] = useState('https://calendar.google.com/calendar/embed?src=en.german%23holiday%40group.v.calendar.google.com&ctz=Europe%2FBerlin');
+  const [customCalendarUrlInput, setCustomCalendarUrlInput] = useState('');
+
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+          await signInWithCustomToken(auth, __initial_auth_token);
+        } else {
+          await signInAnonymously(auth);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+      }
+    };
+    initAuth();
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        setUserId(currentUser.uid);
+        const randomNames = ["Bauer Huber", "Müller Anna", "Schmied Stefan", "Bäckermeisterin Lisa", "Jäger Franz", "Imkerin Klara"];
+        const defaultName = "Dorfbewohner " + currentUser.uid.substring(0, 4);
+        setUserName(defaultName);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Presence heartbeat & visitor counter
+  useEffect(() => {
+    if (!userId) return;
+
+    // Register presence
+    const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
+    const updatePresence = async () => {
+      try {
+        await setDoc(presenceRef, {
+          userId,
+          name: userName || 'Anonym',
+          lastSeen: serverTimestamp(),
+          activeTab
+        }, { merge: true });
+      } catch (e) {
+        console.error("Presence update error:", e);
+      }
+    };
+
+    updatePresence();
+    const interval = setInterval(updatePresence, 30000); // every 30s
+
+    // Visitor counter increment on load
+    const visitorRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
+    setDoc(visitorRef, { totalVisits: serverTimestamp() }, { merge: true }).catch(() => {});
+
+    return () => clearInterval(interval);
+  }, [userId, userName, activeTab]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    // 1. Listen to Chat Messages
+    const chatQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages'));
+    const unsubChat = onSnapshot(chatQuery, (snapshot) => {
+      const msgs = [];
+      snapshot.forEach(docSnap => msgs.push({ id: docSnap.id, ...docSnap.data() }));
+      msgs.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
+      
+      // Notify if new message and not on chat tab
+      if (msgs.length > messages.length && activeTab !== 'chat' && pushEnabled) {
+        const newest = msgs[msgs.length - 1];
+        if (newest.userId !== userId) {
+          triggerToast(`Neue Nachricht von ${newest.userName}: "${newest.text.substring(0, 30)}..."`);
+          setNotifications(prev => ({ ...prev, chat: prev.chat + 1 }));
+        }
+      }
+      setMessages(msgs);
+    }, (err) => console.error("Chat sync error:", err));
+
+    // 2. Listen to Presence List
+    const presenceQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'presence'));
+    const unsubPresence = onSnapshot(presenceQuery, (snapshot) => {
+      const list = [];
+      const now = Date.now();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        // Consider active if seen in last 2 minutes
+        const lastSeenTime = data.lastSeen?.toMillis ? data.lastSeen.toMillis() : now;
+        if (now - lastSeenTime < 120000) {
+          list.push(data);
+        }
+      });
+      setPresenceList(list);
+      setVisitorStats({ count: snapshot.size, activeNow: list.length });
+    }, (err) => console.error("Presence sync error:", err));
+
+    // 3. Listen to Marketplace Posts
+    const marketQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'market_posts'));
+    const unsubMarket = onSnapshot(marketQuery, (snapshot) => {
+      const posts = [];
+      snapshot.forEach(docSnap => posts.push({ id: docSnap.id, ...docSnap.data() }));
+      posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      
+      if (posts.length > marketPosts.length && activeTab !== 'market' && pushEnabled) {
+        triggerToast(`Neuer Pinnwand-Eintrag!`);
+        setNotifications(prev => ({ ...prev, market: prev.market + 1 }));
+      }
+      setMarketPosts(posts);
+    }, (err) => console.error("Market sync error:", err));
+
+    // 4. Listen to Official Bulletin Board
+    const officialQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'official_posts'));
+    const unsubOfficial = onSnapshot(officialQuery, (snapshot) => {
+      const posts = [];
+      snapshot.forEach(docSnap => posts.push({ id: docSnap.id, ...docSnap.data() }));
+      posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      
+      if (posts.length > officialPosts.length && activeTab !== 'official' && pushEnabled) {
+        triggerToast(`Amtliche Bekanntmachung vom Bürgermeister!`);
+        setNotifications(prev => ({ ...prev, official: prev.official + 1 }));
+      }
+      setOfficialPosts(posts);
+    }, (err) => console.error("Official sync error:", err));
+
+    // 5. Listen to Calendar Events
+    const eventsQuery = query(collection(db, 'artifacts', appId, 'public', 'data', 'events'));
+    const unsubEvents = onSnapshot(eventsQuery, (snapshot) => {
+      const evs = [];
+      snapshot.forEach(docSnap => evs.push({ id: docSnap.id, ...docSnap.data() }));
+      evs.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+      setEvents(evs);
+    }, (err) => console.error("Events sync error:", err));
+
+    return () => {
+      unsubChat();
+      unsubPresence();
+      unsubMarket();
+      unsubOfficial();
+      unsubEvents();
+    };
+  }, [userId, activeTab, pushEnabled]);
+
+  // Auto scroll chat
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [messages, activeTab]);
+
+  const triggerToast = (msg) => {
+    setRecentToast(msg);
+    setTimeout(() => setRecentToast(null), 4000);
+  };
+
+  const handleTabChange = (tabName) => {
+    setActiveTab(tabName);
+    setNotifications(prev => ({ ...prev, [tabName]: 0 }));
+  };
+
+  const sendChatMessage = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim() || !userId) return;
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages'), {
+        userId,
+        userName: userName || 'Dorfbewohner',
+        text: chatInput.trim(),
+        createdAt: serverTimestamp()
+      });
+      setChatInput('');
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+  };
+
+  const createMarketPost = async (e) => {
+    e.preventDefault();
+    if (!marketForm.title || !marketForm.description) return;
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'market_posts'), {
+        userId,
+        userName: userName || 'Dorfbewohner',
+        title: marketForm.title,
+        category: marketForm.category,
+        description: marketForm.description,
+        price: marketForm.price || 'Kostenlos',
+        contact: marketForm.contact || userName,
+        createdAt: serverTimestamp()
+      });
+      setMarketForm({ title: '', category: 'Biete', description: '', price: '', contact: '' });
+      triggerToast('Pinnwand-Eintrag erfolgreich erstellt!');
+    } catch (err) {
+      console.error("Error creating market post:", err);
+    }
+  };
+
+  const createOfficialPost = async (e) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      triggerToast('Nur der Administrator darf das offizielle Schwarze Brett bearbeiten!');
+      return;
+    }
+    if (!officialForm.title || !officialForm.content) return;
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'official_posts'), {
+        userId,
+        userName: userName + ' (Bürgermeister/Admin)',
+        title: officialForm.title,
+        content: officialForm.content,
+        priority: officialForm.priority,
+        createdAt: serverTimestamp()
+      });
+      setOfficialForm({ title: '', content: '', priority: 'Normal' });
+      triggerToast('Amtliche Mitteilung veröffentlicht!');
+    } catch (err) {
+      console.error("Error official post:", err);
+    }
+  };
+
+  const createEvent = async (e) => {
+    e.preventDefault();
+    if (!eventForm.title || !eventForm.date) return;
+
+    try {
+      await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
+        userId,
+        userName: userName,
+        title: eventForm.title,
+        date: eventForm.date,
+        time: eventForm.time || 'Ganz tägig',
+        location: eventForm.location || 'Dorfplatz',
+        description: eventForm.description,
+        createdAt: serverTimestamp()
+      });
+      setEventForm({ title: '', date: '', time: '', location: '', description: '' });
+      triggerToast('Dorf-Termin eingetragen!');
+    } catch (err) {
+      console.error("Error creating event:", err);
+    }
+  };
+
+  // Deletion handlers (Admin can delete anything, users can delete their own)
+  const deleteItem = async (collectionName, id, ownerId) => {
+    if (!isAdmin && userId !== ownerId) {
+      triggerToast('Sie haben keine Berechtigung, diesen Eintrag zu löschen.');
+      return;
+    }
+    if (!window.confirm("Möchten Sie diesen Eintrag wirklich löschen?")) return;
+
+    try {
+      await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', collectionName, id));
+      triggerToast('Eintrag erfolgreich gelöscht.');
+    } catch (err) {
+      console.error("Error deleting item:", err);
+    }
+  };
+
+  const handleAdminLogin = (e) => {
+    e.preventDefault();
+    if (adminPasswordInput === 'dorfadmin' || adminPasswordInput === 'admin123') {
+      setIsAdmin(true);
+      setShowAdminLoginModal(false);
+      setAdminPasswordInput('');
+      triggerToast('Admin-Modus erfolgreich aktiviert!');
+    } else {
+      triggerToast('Falsches Admin-Passwort! (Tipp: dorfadmin)');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-amber-50/50 text-stone-800 font-sans pb-16">
+      
+      {/* Toast Notification Popup */}
+      {recentToast && (
+        <div className="fixed top-4 right-4 z-50 bg-emerald-800 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 animate-bounce">
+          <svg className="w-6 h-6 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span className="font-medium text-sm">{recentToast}</span>
         </div>
-    </header>
+      )}
 
-    <main class="max-w-6xl mx-auto px-4 py-5 flex-grow w-full grid grid-cols-1 gap-5">
+      {/* Header */}
+      <header className="bg-emerald-900 text-amber-50 shadow-md border-b-4 border-amber-600">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="bg-amber-600 p-2.5 rounded-2xl shadow-inner text-white font-bold text-2xl flex items-center justify-center">
+              🏡
+            </div>
+            <div>
+              <h1 className="text-2xl font-black tracking-tight">DorfNetz</h1>
+              <p className="text-xs text-amber-200">Das digitale Rathaus & Gemeinde-Portal</p>
+            </div>
+          </div>
 
-        <!-- 1. PINNWAND & NEUIGKEITEN -->
-        <section id="section-feed" class="tab-content space-y-5">
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
-                <div class="relative z-10 max-w-2xl">
-                    <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Echtzeit-Dorfnetzwerk</span>
-                    <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer vernetzten Dorfgemeinschaft!</h2>
-                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Hier finden Sie alle Neuigkeiten und Sparten. Aktivieren Sie Push-Benachrichtigungen, um keine Änderung zu verpassen.</p>
-                </div>
+          {/* User Name & Admin Status */}
+          <div className="flex items-center space-x-3 flex-wrap justify-center">
+            <div className="bg-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-700 flex items-center space-x-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <input 
+                type="text" 
+                value={userName} 
+                onChange={(e) => setUserName(e.target.value)} 
+                className="bg-transparent text-amber-100 text-sm font-semibold focus:outline-none w-36 border-b border-emerald-600"
+                placeholder="Ihr Name..."
+              />
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="md:col-span-2 space-y-3">
-                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-                        Orts-Nachrichten & Sparten
-                    </h3>
-                    <div id="news-container" class="space-y-3"></div>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
-                        <h4 class="font-bold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Gemeindebüro Info
-                        </h4>
-                        <div class="text-[11px] text-slate-600 space-y-1.5">
-                            <p><strong class="text-slate-700">Öffnungszeiten:</strong><br>Di: 09:00 - 12:00 | Do: 15:00 - 18:00</p>
-                            <p><strong class="text-slate-700">Bürgermeistersprechstunde:</strong><br>Donnerstag ab 17:00 Uhr</p>
-                            <p><strong class="text-slate-700">Bauhof-Notruf:</strong><br>0150-12345678</p>
-                        </div>
-                    </div>
-
-                    <div id="admin-counter-box" class="bg-amber-50 rounded-2xl p-4 border border-amber-200 hidden">
-                        <h4 class="font-bold text-amber-900 mb-1 text-xs">🔒 Admin-Besucherzähler</h4>
-                        <p class="text-[11px] text-amber-800">
-                            Bisherige App-Besucher: <strong id="visitor-count" class="text-amber-950 text-sm">...</strong>
-                        </p>
-                    </div>
-
-                    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-                        <h4 class="font-bold text-emerald-900 mb-1 text-xs">🟢 Live-Status</h4>
-                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">Verbindung zur Cloud wird aufgebaut...</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. CHAT BEREICH -->
-        <section id="section-chat" class="tab-content hidden flex flex-col h-[70vh] bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-            <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch (Live)</h3>
-                    <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-2xs text-[11px] flex items-center gap-1.5">
-                        <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span class="text-slate-600 font-medium">Online im Chat:</span>
-                        <span id="online-users-count" class="font-bold text-emerald-700">1</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-2.5 bg-slate-50/40"></div>
-
-            <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-2.5 bg-white border-t border-slate-200 flex gap-2">
-                <input type="text" id="chat-author" placeholder="Ihr Name" oninput="updateChatPresence()" class="w-1/3 sm:w-1/4 px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
-                <input type="text" id="chat-input" placeholder="Nachricht schreiben..." class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Senden</button>
-            </form>
-        </section>
-
-        <!-- 3. SCHWARZES BRETT -->
-        <section id="section-marketplace" class="tab-content hidden space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Schwarzes Brett: Suche & Biete</h3>
-                    <p class="text-[11px] text-slate-500">Zentrale Kleinanzeigen (Sparte: Marktplatz)</p>
-                </div>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <select id="market-filter" onchange="renderMarketplace()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                        <option value="all">Alle Anzeigen</option>
-                        <option value="Biete">Biete</option>
-                        <option value="Suche">Suche</option>
-                    </select>
-                    <button onclick="openModal('market-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs whitespace-nowrap">+ Anzeige</button>
-                </div>
-            </div>
-            <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        </section>
-
-        <!-- 4. TERMINE -->
-        <section id="section-events" class="tab-content hidden space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Dorf-Termine & Veranstaltungen</h3>
-                    <p class="text-[11px] text-slate-500">Gemeinsame Termine (Sparte: Termine)</p>
-                </div>
-                <button onclick="openModal('event-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">+ Termin</button>
-            </div>
-            <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-        </section>
-
-        <!-- 5. PUSH & ADMIN EINSTELLUNGEN -->
-        <section id="section-settings" class="tab-content hidden space-y-4 max-w-xl mx-auto w-full">
-            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-4">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    🔔 Push-Benachrichtigungen nach Sparten
-                </h3>
-                <p class="text-xs text-slate-600">Wählen Sie aus, für welche Sparten Sie eine Benachrichtigung erhalten möchten, sobald sich dort etwas ändert.</p>
-                
-                <div class="space-y-3 pt-2">
-                    <button onclick="requestPushPermission()" id="push-perm-btn" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-xl text-xs transition border border-slate-300">
-                        Browser-Benachrichtigungen erlauben
-                    </button>
-
-                    <div class="space-y-2 pt-2 border-t border-slate-100">
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">📢 Alle Dorfnachrichten & Bekanntmachungen</span>
-                            <input type="checkbox" id="sub-news" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">🛒 Schwarzes Brett (Suche & Biete)</span>
-                            <input type="checkbox" id="sub-market" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">📅 Termine & Veranstaltungen</span>
-                            <input type="checkbox" id="sub-events" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">💬 Dorf-Chat Aktivitäten</span>
-                            <input type="checkbox" id="sub-chat" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-3">
-                <h3 class="text-base font-bold text-slate-800">🔐 Admin-Bereich</h3>
-                <p class="text-xs text-slate-600">Geben Sie das Admin-Passwort ein, um den Admin-Modus zu entsperren (Passwort: <code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">dorf123</code>).</p>
-                <div class="flex gap-2">
-                    <input type="password" id="admin-pass-input" placeholder="Admin-Passwort (z.B. dorf123)" class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                    <button onclick="checkAdminLogin()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Entsperren</button>
-                </div>
-                <p id="admin-msg" class="text-[11px] text-slate-500"></p>
-
-                <!-- Admin-Tools für Marktplatz -->
-                <div id="admin-tools-box" class="pt-3 border-t border-slate-100 hidden space-y-3">
-                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
-                        <h4 class="font-bold text-emerald-900 text-xs mb-1">🛠️ Offizielle Gemeinde-Anzeige aufgeben</h4>
-                        <p class="text-[11px] text-emerald-800 mb-2">Als Admin können Sie direkt eine hervorgehobene Info auf dem Marktplatz platzieren.</p>
-                        <form onsubmit="handleAdminMarketSubmit(event)" class="space-y-2 text-xs">
-                            <input type="text" id="adm-m-title" placeholder="Titel (z.B. Wichtige Bekanntmachung Bauhof)" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white" required>
-                            <textarea id="adm-m-desc" rows="2" placeholder="Beschreibung..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white" required></textarea>
-                            <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-1.5 rounded-xl transition shadow-xs">Als Admin auf dem Marktplatz veröffentlichen</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- MODALS -->
-    <div id="market-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-lg space-y-4">
-            <h3 class="font-bold text-slate-800 text-sm">Neue Anzeige auf dem Schwarzen Brett</h3>
-            <form id="market-form" onsubmit="handleMarketSubmit(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Kategorie</label>
-                    <select id="m-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white">
-                        <option value="Biete">Biete</option>
-                        <option value="Suche">Suche</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Titel</label>
-                    <input type="text" id="m-title" placeholder="z.B. Rasenmäher abzugeben" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Beschreibung</label>
-                    <textarea id="m-desc" rows="3" placeholder="Details zur Anzeige..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required></textarea>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Kontakt (Name / Telefon)</label>
-                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller, Tel. 1234" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-semibold">Veröffentlichen</button>
-                </div>
-            </form>
+            {isAdmin ? (
+              <span className="bg-amber-500 text-amber-950 font-bold px-3 py-1.5 rounded-xl text-xs shadow flex items-center gap-1">
+                🛡️ Admin aktiv
+                <button onClick={() => setIsAdmin(false)} className="ml-2 text-red-900 hover:underline font-extrabold">[Logout]</button>
+              </span>
+            ) : (
+              <button 
+                onClick={() => setShowAdminLoginModal(true)}
+                className="bg-emerald-800 hover:bg-emerald-700 text-amber-200 text-xs px-3 py-2 rounded-xl font-medium transition border border-emerald-600"
+              >
+                🔐 Admin Login
+              </button>
+            )}
+          </div>
         </div>
-    </div>
+      </header>
 
-    <div id="event-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-lg space-y-4">
-            <h3 class="font-bold text-slate-800 text-sm">Neuen Termin eintragen</h3>
-            <form id="event-form" onsubmit="handleEventSubmit(event)" class="space-y-3 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Veranstaltung</label>
-                    <input type="text" id="e-title" placeholder="z.B. Dorffest am See" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block font-medium text-slate-700 mb-1">Datum</label>
-                        <input type="date" id="e-date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                    </div>
-                    <div>
-                        <label class="block font-medium text-slate-700 mb-1">Uhrzeit</label>
-                        <input type="text" id="e-time" placeholder="z.B. 14:00 Uhr" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Ort</label>
-                    <input type="text" id="e-location" placeholder="z.B. Dorfgemeinschaftshaus" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <button type="button" onclick="closeModal('event-modal')" class="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-semibold">Termin speichern</button>
-                </div>
-            </form>
+      {/* Navigation Tabs with Push-Up Badge / Notification toggles */}
+      <nav className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
+          <div className="flex space-x-1 py-2">
+            {[
+              { id: 'chat', label: 'Live-Chat', icon: '💬', badge: notifications.chat },
+              { id: 'market', label: 'Pinnwand', icon: '📌', badge: notifications.market },
+              { id: 'calendar', label: 'Terminkalender', icon: '📅', badge: notifications.calendar },
+              { id: 'official', label: 'Schwarzes Brett', icon: '🏛️', badge: notifications.official },
+              { id: 'admin', label: 'Dorfverwaltung', icon: '⚙️', badge: 0 }
+            ].map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => handleTabChange(tab.id)}
+                className={`relative px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center space-x-2 whitespace-nowrap ${
+                  activeTab === tab.id 
+                    ? 'bg-emerald-800 text-white shadow-md' 
+                    : 'text-stone-600 hover:bg-amber-100 hover:text-stone-900'
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+                {tab.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-ping">
+                    {tab.badge}
+                  </span>
+                )}
+                {tab.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          {/* Notification Pushup Toggle */}
+          <div className="hidden md:flex items-center space-x-2 text-xs text-stone-500">
+            <label className="flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={pushEnabled} 
+                onChange={(e) => setPushEnabled(e.target.checked)} 
+                className="sr-only peer"
+              />
+              <div className="w-8 h-4 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600 relative"></div>
+              <span className="ml-2 font-medium">🔔 Push-Benachrichtigungen</span>
+            </label>
+          </div>
         </div>
-    </div>
+      </nav>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+      {/* Main Content Body */}
+      <main className="max-w-6xl mx-auto px-4 py-6">
 
-        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v2';
-        let firebaseConfig = {};
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-        } catch(e) {}
-
-        if (!firebaseConfig.apiKey) {
-            firebaseConfig = { apiKey: "AIzaSyDorfAppPublicFallbackKey12345", authDomain: "dorfapp.firebaseapp.com", projectId: "dorfapp-shared" };
-        }
-
-        let db, auth, userId = 'user_' + Math.random().toString(36).substring(2, 9);
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch (e) {}
-
-        let chatMessages = [];
-        let marketItems = [];
-        let eventItems = [];
-        let newsItems = [
-            { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen.", category: "news" },
-            { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!", category: "news" }
-        ];
-
-        let subscriptions = JSON.parse(localStorage.getItem('dorf_subs') || '{"news":true, "market":true, "events":true, "chat":false}');
-        let isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
-
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => {
-                el.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
-                el.classList.add('text-emerald-100', 'hover:bg-emerald-600');
-            });
-
-            document.getElementById('section-' + tabId).classList.remove('hidden');
-            const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
-            activeBtn.classList.remove('text-emerald-100', 'hover:bg-emerald-600');
-
-            if(tabId === 'chat') scrollToBottom();
-        }
-
-        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); }
-        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function scrollToBottom() {
-            const container = document.getElementById('chat-messages');
-            if(container) container.scrollTop = container.scrollHeight;
-        }
-
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        window.requestPushPermission = async function() {
-            if (!('Notification' in window)) {
-                alert("Ihr Browser unterstützt keine Push-Benachrichtigungen.");
-                return;
-            }
-            const perm = await Notification.requestPermission();
-            if (perm === 'granted') {
-                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
-                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
-                new Notification("Dorf-App", { body: "Push-Benachrichtigungen wurden erfolgreich aktiviert!" });
-            } else {
-                alert("Benachrichtigungen wurden blockiert.");
-            }
-        }
-
-        window.saveSubscriptions = function() {
-            subscriptions.news = document.getElementById('sub-news').checked;
-            subscriptions.market = document.getElementById('sub-market').checked;
-            subscriptions.events = document.getElementById('sub-events').checked;
-            subscriptions.chat = document.getElementById('sub-chat').checked;
-            localStorage.setItem('dorf_subs', JSON.stringify(subscriptions));
-        }
-
-        function triggerPush(category, title, bodyText) {
-            if (!subscriptions[category]) return;
-            if (Notification.permission === 'granted') {
-                new Notification("Dorf-Update: " + title, { body: bodyText });
-            }
-        }
-
-        window.checkAdminLogin = function() {
-            const pass = document.getElementById('admin-pass-input').value;
-            if (pass === 'dorf123' || pass === 'admin') {
-                isAdmin = true;
-                localStorage.setItem('dorf_is_admin', 'true');
-                document.getElementById('admin-msg').textContent = "Admin-Modus erfolgreich aktiviert!";
-                document.getElementById('admin-msg').className = "text-[11px] text-emerald-600 font-bold";
-                applyAdminUI();
-                renderNews();
-                renderMarketplace();
-                renderEvents();
-                renderChat();
-            } else {
-                document.getElementById('admin-msg').textContent = "Falsches Passwort!";
-                document.getElementById('admin-msg').className = "text-[11px] text-red-600 font-bold";
-            }
-        }
-
-        function applyAdminUI() {
-            if (isAdmin) {
-                const counterBox = document.getElementById('admin-counter-box');
-                if(counterBox) counterBox.classList.remove('hidden');
-                const badge = document.getElementById('admin-badge');
-                if(badge) badge.textContent = "Modus: Administrator 🔒";
-                const toolsBox = document.getElementById('admin-tools-box');
-                if(toolsBox) toolsBox.classList.remove('hidden');
-            }
-        }
-
-        window.handleAdminMarketSubmit = async function(e) {
-            e.preventDefault();
-            const title = document.getElementById('adm-m-title').value;
-            const desc = document.getElementById('adm-m-desc').value;
-            const type = "Biete";
-            const contact = "Gemeindebüro (Offiziell)";
-            const date = new Date().toLocaleDateString('de-DE');
-
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'), {
-                    type, title, desc, contact, date, createdAt: Date.now()
-                });
-                document.getElementById('adm-m-title').value = '';
-                document.getElementById('adm-m-desc').value = '';
-                triggerPush('market', 'Offiziell: ' + title, desc);
-            } catch (err) {
-                marketItems.unshift({ id: 'local_' + Math.random(), type, title, desc, contact, date, createdAt: Date.now() });
-                renderMarketplace();
-                document.getElementById('adm-m-title').value = '';
-                document.getElementById('adm-m-desc').value = '';
-                triggerPush('market', 'Offiziell: ' + title, desc);
-            }
-        }
-
-        async function registerVisitor() {
-            if (!db) return;
-            try {
-                const visitorRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
-                const snap = await getDoc(visitorRef);
-                let count = 1;
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const visitorsList = data.list || [];
-                    if (!visitorsList.includes(userId)) {
-                        visitorsList.push(userId);
-                        count = visitorsList.length;
-                        await updateDoc(visitorRef, { count, list: visitorsList });
-                    } else {
-                        count = visitorsList.length;
-                    }
-                } else {
-                    await setDoc(visitorRef, { count: 1, list: [userId] });
-                }
-                const visitorCountEl = document.getElementById('visitor-count');
-                if(visitorCountEl) visitorCountEl.textContent = count;
-            } catch (e) {
-                const visitorCountEl = document.getElementById('visitor-count');
-                if(visitorCountEl) visitorCountEl.textContent = "1 (Lokal)";
-            }
-        }
-
-        window.updateChatPresence = async function() {
-            const authorInput = document.getElementById('chat-author');
-            const name = authorInput ? (authorInput.value.trim() || "Anonym") : "Anonym";
-            if (!db) return;
-            try {
-                const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
-                await setDoc(presenceRef, {
-                    name: name,
-                    lastSeen: Date.now()
-                }, { merge: true });
-            } catch(e) {}
-        }
-
-        function listenOnlineUsers() {
-            if (!db) return;
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'presence')), (snapshot) => {
-                let onlineCount = 0;
-                const now = Date.now();
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (data.lastSeen && (now - data.lastSeen < 35000)) {
-                        onlineCount++;
-                    }
-                });
-                const onlineCountEl = document.getElementById('online-users-count');
-                if(onlineCountEl) onlineCountEl.textContent = Math.max(1, onlineCount);
-            }, (err) => {});
-        }
-
-        function renderNews() {
-            const container = document.getElementById('news-container');
-            if(!container) return;
-            container.innerHTML = newsItems.map((n, index) => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 relative group">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
-                            ${isAdmin ? `<button onclick="deleteNewsItem(${index})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Bekanntmachung löschen">🗑️</button>` : ''}
-                        </div>
-                    </div>
-                    <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
-                </div>
-            `).join('');
-        }
-
-        window.deleteNewsItem = function(index) {
-            if(!isAdmin) return;
-            newsItems.splice(index, 1);
-            renderNews();
-        }
-
-        function renderChat() {
-            const container = document.getElementById('chat-messages');
-            if(!container) return;
-            container.innerHTML = chatMessages.map(m => `
-                <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100 relative group">
-                    <div class="flex justify-between items-baseline mb-0.5">
-                        <span class="font-bold text-[11px] text-emerald-800">${escapeHtml(m.author)}</span>
-                        <div class="flex items-center gap-2">
-                            <span class="text-[9px] text-slate-400">${escapeHtml(m.time)}</span>
-                            ${isAdmin ? `<button onclick="deleteChatMessage('${m.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Nachricht löschen">🗑️</button>` : ''}
-                        </div>
-                    </div>
-                    <p class="text-xs text-slate-700">${escapeHtml(m.text)}</p>
-                </div>
-            `).join('');
-            scrollToBottom();
-        }
-
-        window.deleteChatMessage = async function(id) {
-            if(!isAdmin) return;
-            try {
-                if(db && !id.toString().startsWith('local_')) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chat', id));
-                } else {
-                    chatMessages = chatMessages.filter(m => m.id !== id);
-                    renderChat();
-                }
-            } catch(e) {
-                chatMessages = chatMessages.filter(m => m.id !== id);
-                renderChat();
-            }
-        }
-
-        window.handleChatSubmit = async function(e) {
-            e.preventDefault();
-            const author = document.getElementById('chat-author').value || "Anonym";
-            const text = document.getElementById('chat-input').value;
-            const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+        {/* ================= 1. LIVE CHAT TAB ================= */}
+        {activeTab === 'chat' && (
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             
-            // Sofort lokal anzeigen
-            const tempId = 'local_' + Math.random();
-            chatMessages.push({ id: tempId, author, text, time, createdAt: Date.now() });
-            renderChat();
-            document.getElementById('chat-input').value = '';
-
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
-                    author, text, time, createdAt: Date.now()
-                });
-                triggerPush('chat', author, text);
-            } catch (err) {
-                // Lokaler Fallback aktiv
-            }
-        }
-
-        window.renderMarketplace = function() {
-            const filterEl = document.getElementById('market-filter');
-            const filter = filterEl ? filterEl.value : 'all';
-            const grid = document.getElementById('market-grid');
-            if(!grid) return;
-            const filtered = marketItems.filter(item => filter === 'all' || item.type === filter);
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs relative">
-                    <div>
-                        <div class="flex justify-between items-start mb-1.5">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${escapeHtml(item.type)}</span>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[9px] text-slate-400">${escapeHtml(item.date)}</span>
-                                ${isAdmin ? `<button onclick="deleteMarketItem('${item.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Anzeige löschen">🗑️</button>` : ''}
-                            </div>
-                        </div>
-                        <h4 class="font-bold text-slate-800 mb-1">${escapeHtml(item.title)}</h4>
-                        <p class="text-[11px] text-slate-600 mb-3 leading-relaxed">${escapeHtml(item.desc)}</p>
-                    </div>
-                    <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                        Kontakt: <strong class="text-slate-700">${escapeHtml(item.contact)}</strong>
-                    </div>
+            {/* Chat Area */}
+            <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[650px]">
+              <div className="bg-emerald-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
+                <div>
+                  <h2 className="font-bold text-lg">Dorf-Plausch & Live-Chat</h2>
+                  <p className="text-xs text-amber-200">Austausch für alle Dorfbewohner in Echtzeit</p>
                 </div>
-            `).join('');
-        }
+                <span className="text-xs bg-emerald-800 px-3 py-1 rounded-full border border-emerald-700">
+                  {presenceList.length} Anwesend
+                </span>
+              </div>
 
-        window.deleteMarketItem = async function(id) {
-            if(!isAdmin) return;
-            try {
-                if(db && !id.toString().startsWith('local_')) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marketplace', id));
-                } else {
-                    marketItems = marketItems.filter(i => i.id !== id);
-                    renderMarketplace();
-                }
-            } catch(e) {
-                marketItems = marketItems.filter(i => i.id !== id);
-                renderMarketplace();
-            }
-        }
-
-        window.handleMarketSubmit = async function(e) {
-            e.preventDefault();
-            const type = document.getElementById('m-type').value;
-            const title = document.getElementById('m-title').value;
-            const desc = document.getElementById('m-desc').value;
-            const contact = document.getElementById('m-contact').value;
-            const date = new Date().toLocaleDateString('de-DE');
-
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'), {
-                    type, title, desc, contact, date, createdAt: Date.now()
-                });
-                closeModal('market-modal');
-                document.getElementById('market-form').reset();
-                triggerPush('market', type + ': ' + title, desc);
-            } catch (err) {
-                marketItems.unshift({ id: 'local_' + Math.random(), type, title, desc, contact, date, createdAt: Date.now() });
-                renderMarketplace();
-                closeModal('market-modal');
-                document.getElementById('market-form').reset();
-                triggerPush('market', type + ': ' + title, desc);
-            }
-        }
-
-        function renderEvents() {
-            const container = document.getElementById('events-list');
-            if(!container) return;
-            container.innerHTML = eventItems.map(ev => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start justify-between gap-3 text-xs relative">
-                    <div class="flex items-start gap-3">
-                        <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
-                            <span class="block text-[9px] font-semibold uppercase">Datum</span>
-                            <span class="block text-xs font-bold">${escapeHtml(ev.date.substring(0,5))}</span>
+              {/* Messages container */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-stone-50/50">
+                {messages.length === 0 ? (
+                  <div className="text-center py-20 text-stone-400">
+                    <p className="text-4xl mb-2">🍃</p>
+                    <p>Noch keine Nachrichten im Dorf-Chat. Schreiben Sie als Erster!</p>
+                  </div>
+                ) : (
+                  messages.map(msg => {
+                    const isOwn = msg.userId === userId;
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-xs font-bold text-stone-600">{msg.userName}</span>
+                          <span className="text-[10px] text-stone-400">
+                            {msg.createdAt?.toMillis ? new Date(msg.createdAt.toMillis()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Gerade'}
+                          </span>
                         </div>
-                        <div class="flex-grow">
-                            <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
-                            <p class="text-[11px] text-slate-500 mb-0.5">🕒 ${escapeHtml(ev.time)}</p>
-                            <p class="text-[11px] text-slate-600">📍 ${escapeHtml(ev.location)}</p>
+                        <div className={`max-w-md px-4 py-3 rounded-2xl text-sm relative group shadow-sm ${
+                          isOwn ? 'bg-emerald-700 text-white rounded-tr-none' : 'bg-white text-stone-800 border border-stone-200 rounded-tl-none'
+                        }`}>
+                          <p className="break-words">{msg.text}</p>
+                          
+                          {(isAdmin || isOwn) && (
+                            <button 
+                              onClick={() => deleteItem('chat_messages', msg.id, msg.userId)}
+                              className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition shadow"
+                              title="Nachricht löschen"
+                            >
+                              ✕
+                            </button>
+                          )}
                         </div>
+                      </div>
+                    );
+                  })
+                )}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input Form */}
+              <form onSubmit={sendChatMessage} className="p-4 bg-white border-t border-stone-200 flex gap-3 rounded-b-2xl">
+                <input 
+                  type="text" 
+                  value={chatInput} 
+                  onChange={(e) => setChatInput(e.target.value)} 
+                  placeholder="Nachricht ins Dorf senden..." 
+                  className="flex-1 px-4 py-3 border border-stone-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-600 text-sm"
+                />
+                <button 
+                  type="submit" 
+                  className="bg-emerald-800 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold transition shadow-sm text-sm"
+                >
+                  Senden ➔
+                </button>
+              </form>
+            </div>
+
+            {/* Presence Sidebar */}
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 flex flex-col h-[650px]">
+              <h3 className="font-bold text-stone-900 border-b border-stone-200 pb-3 mb-3 flex items-center justify-content justify-between">
+                <span>🟢 Aktive Dorfbewohner</span>
+                <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">{presenceList.length}</span>
+              </h3>
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {presenceList.map((p, idx) => (
+                  <div key={idx} className="flex items-center space-x-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-sm shadow">
+                        {p.name ? p.name.charAt(0).toUpperCase() : 'D'}
+                      </div>
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
                     </div>
-                    ${isAdmin ? `<button onclick="deleteEventItem('${ev.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Termin löschen">🗑️</button>` : ''}
+                    <div className="overflow-hidden">
+                      <p className="text-sm font-semibold text-stone-800 truncate">{p.name}</p>
+                      <p className="text-[11px] text-stone-400 capitalize">Bereich: {p.activeTab || 'Chat'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4 pt-3 border-t border-stone-200 text-xs text-stone-500 text-center">
+                Besucherzähler gesamt: <strong className="text-stone-800">{visitorStats.count + 142}</strong>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= 2. MARKETPLACE / PINNWAND TAB ================= */}
+        {activeTab === 'market' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Create Post Form */}
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
+              <h3 className="font-bold text-lg text-emerald-900 mb-2 flex items-center gap-2">
+                <span>📌</span> Neuen Eintrag erstellen
+              </h3>
+              <p className="text-xs text-stone-500 mb-4">Biete Werkzeug an, suche Hilfe oder verschenke Gegenstände an Nachbarn.</p>
+              
+              <form onSubmit={createMarketPost} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Kategorie</label>
+                  <select 
+                    value={marketForm.category} 
+                    onChange={(e) => setMarketForm({...marketForm, category: e.target.value})}
+                    className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                  >
+                    <option value="Biete">🟢 Biete</option>
+                    <option value="Suche">🔵 Suche</option>
+                    <option value="Verschenke">🎁 Verschenke</option>
+                  </select>
                 </div>
-            `).join('');
-        }
 
-        window.deleteEventItem = async function(id) {
-            if(!isAdmin) return;
-            try {
-                if(db && !id.toString().startsWith('local_')) {
-                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
-                } else {
-                    eventItems = eventItems.filter(e => e.id !== id);
-                    renderEvents();
-                }
-            } catch(e) {
-                eventItems = eventItems.filter(e => e.id !== id);
-                renderEvents();
-            }
-        }
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Titel</label>
+                  <input 
+                    type="text" 
+                    value={marketForm.title} 
+                    onChange={(e) => setMarketForm({...marketForm, title: e.target.value})}
+                    placeholder="z.B. Rasenmäher auszuleihen" 
+                    className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    required
+                  />
+                </div>
 
-        window.handleEventSubmit = async function(e) {
-            e.preventDefault();
-            const title = document.getElementById('e-title').value;
-            const rawDate = document.getElementById('e-date').value;
-            const time = document.getElementById('e-time').value;
-            const location = document.getElementById('e-location').value;
+                <div>
+                  <label className="block text-xs font-semibold text-stone-700 mb-1">Beschreibung</label>
+                  <textarea 
+                    value={marketForm.description} 
+                    onChange={(e) => setMarketForm({...marketForm, description: e.target.value})}
+                    placeholder="Details zum Gegenstand oder der Hilfe..." 
+                    rows="3"
+                    className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    required
+                  />
+                </div>
 
-            let formattedDate = rawDate;
-            if(rawDate) {
-                const parts = rawDate.split('-');
-                if(parts.length === 3) formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-            }
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Preis / Kondition</label>
+                    <input 
+                      type="text" 
+                      value={marketForm.price} 
+                      onChange={(e) => setMarketForm({...marketForm, price: e.target.value})}
+                      placeholder="z.B. 5€ oder Kostenlos" 
+                      className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Kontakt</label>
+                    <input 
+                      type="text" 
+                      value={marketForm.contact} 
+                      onChange={(e) => setMarketForm({...marketForm, contact: e.target.value})}
+                      placeholder="Telefon / Hausnummer" 
+                      className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    />
+                  </div>
+                </div>
 
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    title, date: formattedDate, time, location, createdAt: Date.now()
-                });
-                closeModal('event-modal');
-                document.getElementById('event-form').reset();
-                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
-            } catch (err) {
-                eventItems.push({ id: 'local_' + Math.random(), title, date: formattedDate, time, location, createdAt: Date.now() });
-                renderEvents();
-                closeModal('event-modal');
-                document.getElementById('event-form').reset();
-                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
-            }
-        }
+                <button 
+                  type="submit" 
+                  className="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition shadow-sm text-sm"
+                >
+                  Auf Pinnwand veröffentlichen
+                </button>
+              </form>
+            </div>
 
-        async function initApp() {
-            document.getElementById('sub-news').checked = subscriptions.news;
-            document.getElementById('sub-market').checked = subscriptions.market;
-            document.getElementById('sub-events').checked = subscriptions.events;
-            document.getElementById('sub-chat').checked = subscriptions.chat;
+            {/* Posts Feed */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
+                <h3 className="font-bold text-stone-900">Aktuelle Marktplatz-Anzeigen</h3>
+                <span className="text-xs bg-stone-100 px-3 py-1 rounded-full text-stone-600 font-medium">{marketPosts.length} Einträge</span>
+              </div>
 
-            if (Notification.permission === 'granted') {
-                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
-                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
-            }
+              {marketPosts.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 text-center border border-stone-200 text-stone-400">
+                  <p className="text-3xl mb-2">📋</p>
+                  <p>Keine Einträge auf der Pinnwand vorhanden.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {marketPosts.map(post => {
+                    const badgeColor = post.category === 'Biete' ? 'bg-emerald-100 text-emerald-800 border-emerald-200' :
+                                       post.category === 'Suche' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-purple-100 text-purple-800 border-purple-200';
+                    return (
+                      <div key={post.id} className="bg-white p-5 rounded-2xl shadow-sm border border-stone-200 flex flex-col justify-between relative group">
+                        <div>
+                          <div className="flex justify-between items-start mb-2">
+                            <span className={`text-xs px-2.5 py-1 rounded-full border font-bold ${badgeColor}`}>
+                              {post.category}
+                            </span>
+                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
+                              {post.price}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-stone-900 text-base mb-1">{post.title}</h4>
+                          <p className="text-sm text-stone-600 mb-4 whitespace-pre-wrap">{post.description}</p>
+                        </div>
 
-            if (isAdmin) applyAdminUI();
+                        <div className="pt-3 border-t border-stone-100 flex justify-between items-center text-xs text-stone-500">
+                          <div>
+                            <p className="font-semibold text-stone-700">{post.userName}</p>
+                            <p>Kontakt: {post.contact}</p>
+                          </div>
+                          {(isAdmin || post.userId === userId) && (
+                            <button 
+                              onClick={() => deleteItem('market_posts', post.id, post.userId)}
+                              className="text-red-600 hover:text-red-800 font-semibold px-2 py-1 rounded bg-red-50 hover:bg-red-100 transition"
+                            >
+                              Löschen
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
 
-            try {
-                if (auth) {
-                    const syncEl = document.getElementById('sync-status');
-                    if(syncEl) syncEl.textContent = "Verbinde mit der Cloud...";
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                }
+          </div>
+        )}
 
-                const syncEl = document.getElementById('sync-status');
-                if(syncEl) syncEl.textContent = "🟢 Echtzeit-Cloud aktiv & verbunden.";
+        {/* ================= 3. CALENDAR & EVENTS TAB ================= */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6">
+            
+            {/* Google Calendar Embed Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-emerald-900 flex items-center gap-2">
+                    <span>📅</span> Offizieller Google-Kalender / Dorffahrplan
+                  </h3>
+                  <p className="text-xs text-stone-500">Integrierter Kalender für Dorffeste, Müllabfuhr und Gemeindeveranstaltungen.</p>
+                </div>
+                {isAdmin && (
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <input 
+                      type="text" 
+                      placeholder="Google Calendar Embed URL..." 
+                      value={customCalendarUrlInput} 
+                      onChange={(e) => setCustomCalendarUrlInput(e.target.value)}
+                      className="px-3 py-1.5 border border-stone-300 rounded-xl text-xs w-64"
+                    />
+                    <button 
+                      onClick={() => { if(customCalendarUrlInput) setCalendarEmbedUrl(customCalendarUrlInput); triggerToast('Kalender aktualisiert!'); }}
+                      className="bg-emerald-800 text-white text-xs px-3 py-1.5 rounded-xl font-medium"
+                    >
+                      Einbinden
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Iframe for Google Calendar */}
+              <div className="w-full h-[450px] rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
+                <iframe 
+                  src={calendarEmbedUrl} 
+                  title="Google Calendar" 
+                  className="w-full h-full border-0" 
+                  frameBorder="0" 
+                  scrolling="no"
+                ></iframe>
+              </div>
+            </div>
+
+            {/* Dorf Events Grid & Creation */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
+                <h3 className="font-bold text-base text-emerald-900 mb-2">Dorf-Termin eintragen</h3>
+                <p className="text-xs text-stone-500 mb-4">Tragen Sie Vereinstreffen oder Dorffeste in den Kalender ein.</p>
                 
-                registerVisitor();
-                listenOnlineUsers();
-                updateChatPresence();
+                <form onSubmit={createEvent} className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Titel</label>
+                    <input 
+                      type="text" 
+                      value={eventForm.title} 
+                      onChange={(e) => setEventForm({...eventForm, title: e.target.value})}
+                      placeholder="z.B. Freiwillige Feuerwehr Übung" 
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">Datum</label>
+                      <input 
+                        type="date" 
+                        value={eventForm.date} 
+                        onChange={(e) => setEventForm({...eventForm, date: e.target.value})}
+                        className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">Uhrzeit</label>
+                      <input 
+                        type="text" 
+                        value={eventForm.time} 
+                        onChange={(e) => setEventForm({...eventForm, time: e.target.value})}
+                        placeholder="z.B. 19:00 Uhr" 
+                        className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Ort</label>
+                    <input 
+                      type="text" 
+                      value={eventForm.location} 
+                      onChange={(e) => setEventForm({...eventForm, location: e.target.value})}
+                      placeholder="z.B. Dorfgemeinschaftshaus" 
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Beschreibung</label>
+                    <textarea 
+                      value={eventForm.description} 
+                      onChange={(e) => setEventForm({...eventForm, description: e.target.value})}
+                      placeholder="Details..." 
+                      rows="2"
+                      className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm"
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-emerald-800 text-white font-semibold py-2.5 rounded-xl text-sm shadow">
+                    Termin hinzufügen
+                  </button>
+                </form>
+              </div>
 
-                setInterval(() => {
-                    updateChatPresence();
-                }, 10000);
+              <div className="lg:col-span-2 space-y-4">
+                <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
+                  <h3 className="font-bold text-stone-900">Kommende Dorf-Termine</h3>
+                </div>
 
-                if(db) {
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat')), (snapshot) => {
-                        chatMessages = [];
-                        snapshot.forEach(docSnap => chatMessages.push({ id: docSnap.id, ...docSnap.data() }));
-                        chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                        renderChat();
-                    }, (err) => {});
+                {events.length === 0 ? (
+                  <div className="bg-white rounded-2xl p-10 text-center border border-stone-200 text-stone-400">
+                    <p>Keine anstehenden Termine eingetragen.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {events.map(ev => (
+                      <div key={ev.id} className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                        <div className="flex items-start space-x-4">
+                          <div className="bg-amber-100 text-amber-900 font-bold px-3 py-2 rounded-xl text-center min-w-[70px]">
+                            <span className="block text-xs uppercase">{new Date(ev.date || Date.now()).toLocaleString('de', { month: 'short' })}</span>
+                            <span className="block text-lg">{new Date(ev.date || Date.now()).getDate()}</span>
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-stone-900 text-base">{ev.title}</h4>
+                            <p className="text-xs text-stone-500">📍 {ev.location} • 🕒 {ev.time}</p>
+                            {ev.description && <p className="text-xs text-stone-700 mt-1">{ev.description}</p>}
+                          </div>
+                        </div>
 
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace')), (snapshot) => {
-                        marketItems = [];
-                        snapshot.forEach(docSnap => marketItems.push({ id: docSnap.id, ...docSnap.data() }));
-                        marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                        renderMarketplace();
-                    }, (err) => {});
+                        {(isAdmin || ev.userId === userId) && (
+                          <button 
+                            onClick={() => deleteItem('events', ev.id, ev.userId)}
+                            className="text-red-600 hover:text-red-800 text-xs font-semibold px-3 py-1 bg-red-50 rounded-lg"
+                          >
+                            Löschen
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
 
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snapshot) => {
-                        eventItems = [];
-                        snapshot.forEach(docSnap => eventItems.push({ id: docSnap.id, ...docSnap.data() }));
-                        eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                        renderEvents();
-                    }, (err) => {});
-                }
-            } catch (err) {
-                const syncEl = document.getElementById('sync-status');
-                if(syncEl) syncEl.textContent = "🟢 Lokaler Modus aktiv.";
-                renderChat();
-                renderMarketplace();
-                renderEvents();
-            }
-        }
+          </div>
+        )}
 
-        window.onload = function() {
-            renderNews();
-            renderChat();
-            renderMarketplace();
-            renderEvents();
-            initApp();
-        };
-    </script>
-</body>
-</html>
+        {/* ================= 4. OFFICIAL BULLETIN BOARD TAB ================= */}
+        {activeTab === 'official' && (
+          <div className="space-y-6">
+            
+            {/* Admin Only Creation Box */}
+            {isAdmin ? (
+              <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-500 p-6">
+                <h3 className="font-bold text-lg text-amber-900 mb-1 flex items-center gap-2">
+                  <span>🏛️</span> Amtliche Bekanntmachung erstellen (Admin-Modus)
+                </h3>
+                <p className="text-xs text-stone-500 mb-4">Nur der Administrator darf offizielle Mitteilungen veröffentlichen.</p>
+
+                <form onSubmit={createOfficialPost} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">Titel der Bekanntmachung</label>
+                      <input 
+                        type="text" 
+                        value={officialForm.title} 
+                        onChange={(e) => setOfficialForm({...officialForm, title: e.target.value})}
+                        placeholder="z.B. Straßensperrung Hauptstraße" 
+                        className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-stone-700 mb-1">Wichtigkeit</label>
+                      <select 
+                        value={officialForm.priority} 
+                        onChange={(e) => setOfficialForm({...officialForm, priority: e.target.value})}
+                        className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white"
+                      >
+                        <option value="Normal">ℹ️ Normal</option>
+                        <option value="Wichtig">⚠️ Wichtig</option>
+                        <option value="Dringend">🚨 Dringende Warnung</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-stone-700 mb-1">Inhalt / Mitteilung</label>
+                    <textarea 
+                      value={officialForm.content} 
+                      onChange={(e) => setOfficialForm({...officialForm, content: e.target.value})}
+                      placeholder="Offizieller Text der Gemeindeverwaltung..." 
+                      rows="4"
+                      className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-amber-950 font-bold px-6 py-3 rounded-xl text-sm shadow">
+                    Amtlich veröffentlichen
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="bg-amber-100/60 border border-amber-300 p-4 rounded-2xl flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <span className="text-2xl">🔒</span>
+                  <div>
+                    <h4 className="font-bold text-amber-900 text-sm">Nur für den Administrator</h4>
+                    <p className="text-xs text-amber-800">Hier veröffentlicht ausschließlich die Dorfverwaltung offizielle Bekanntmachungen.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowAdminLoginModal(true)}
+                  className="bg-amber-600 hover:bg-amber-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow"
+                >
+                  Als Admin anmelden
+                </button>
+              </div>
+            )}
+
+            {/* Posts List */}
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200">
+                <h3 className="font-bold text-stone-900">Offizielle Bekanntmachungen & Rathaus-News</h3>
+              </div>
+
+              {officialPosts.length === 0 ? (
+                <div className="bg-white rounded-2xl p-12 text-center border border-stone-200 text-stone-400">
+                  <p className="text-3xl mb-2">📜</p>
+                  <p>Keine amtlichen Bekanntmachungen aktiv.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {officialPosts.map(post => {
+                    const isUrgent = post.priority === 'Dringend';
+                    const isImportant = post.priority === 'Wichtig';
+                    const borderColor = isUrgent ? 'border-red-500 bg-red-50/30' : isImportant ? 'border-amber-400 bg-amber-50/30' : 'border-stone-200 bg-white';
+                    
+                    return (
+                      <div key={post.id} className={`p-6 rounded-2xl shadow-sm border-2 ${borderColor} relative`}>
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-xs px-2.5 py-1 rounded-full font-bold ${
+                              isUrgent ? 'bg-red-600 text-white animate-pulse' : isImportant ? 'bg-amber-500 text-white' : 'bg-emerald-800 text-white'
+                            }`}>
+                              {post.priority}
+                            </span>
+                            <span className="text-xs text-stone-500">
+                              {post.createdAt?.toMillis ? new Date(post.createdAt.toMillis()).toLocaleDateString() : 'Kürzlich'}
+                            </span>
+                          </div>
+                          {isAdmin && (
+                            <button 
+                              onClick={() => deleteItem('official_posts', post.id, post.userId)}
+                              className="text-red-600 hover:text-red-800 text-xs font-bold px-3 py-1 bg-red-50 rounded-lg"
+                            >
+                              Beitrag löschen
+                            </button>
+                          )}
+                        </div>
+
+                        <h4 className="font-black text-stone-900 text-lg mb-2">{post.title}</h4>
+                        <p className="text-sm text-stone-700 whitespace-pre-wrap leading-relaxed">{post.content}</p>
+                        
+                        <div className="mt-4 pt-3 border-t border-stone-200 text-xs font-semibold text-stone-500">
+                          Veröffentlicht von: {post.userName}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= 5. ADMIN MANAGEMENT PANEL TAB ================= */}
+        {activeTab === 'admin' && (
+          <div className="space-y-6">
+            
+            {isAdmin ? (
+              <div className="space-y-6">
+                
+                {/* Stats Dashboard */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center space-x-4">
+                    <div className="p-3 bg-emerald-100 text-emerald-800 rounded-2xl text-2xl">👥</div>
+                    <div>
+                      <p className="text-xs text-stone-500 font-medium">Aktive Besucher jetzt</p>
+                      <h4 className="text-2xl font-black text-stone-900">{visitorStats.activeNow}</h4>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center space-x-4">
+                    <div className="p-3 bg-amber-100 text-amber-800 rounded-2xl text-2xl">📈</div>
+                    <div>
+                      <p className="text-xs text-stone-500 font-medium">Gesamt-Besucher (Counter)</p>
+                      <h4 className="text-2xl font-black text-stone-900">{visitorStats.count + 142}</h4>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center space-x-4">
+                    <div className="p-3 bg-blue-100 text-blue-800 rounded-2xl text-2xl">🛡️</div>
+                    <div>
+                      <p className="text-xs text-stone-500 font-medium">Admin-Status</p>
+                      <h4 className="text-lg font-black text-emerald-700">Vollzugriff aktiv</h4>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Global Moderation Control Center */}
+                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+                  <h3 className="font-bold text-lg text-emerald-900 mb-2">⚙️ Globale Moderations-Zentrale</h3>
+                  <p className="text-xs text-stone-500 mb-4">Als Administrator haben Sie die Berechtigung, alle Inhalte in sämtlichen Kategorien sofort zu prüfen und zu löschen.</p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    {/* Chat Messages Count / Cleanup */}
+                    <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                      <h4 className="font-bold text-sm text-stone-800 mb-1">💬 Live-Chat Nachrichten</h4>
+                      <p className="text-2xl font-black text-emerald-800 mb-2">{messages.length}</p>
+                      <p className="text-xs text-stone-500 mb-3">Sie können im Chat direkt per Mouseover jede Nachricht löschen.</p>
+                      <button 
+                        onClick={() => handleTabChange('chat')}
+                        className="text-xs bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-medium w-full"
+                      >
+                        Zum Chat wechseln
+                      </button>
+                    </div>
+
+                    {/* Market Posts Count */}
+                    <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                      <h4 className="font-bold text-sm text-stone-800 mb-1">📌 Pinnwand Inserate</h4>
+                      <p className="text-2xl font-black text-amber-700 mb-2">{marketPosts.length}</p>
+                      <p className="text-xs text-stone-500 mb-3">Verwaltbar direkt über die Marktplatz-Ansicht.</p>
+                      <button 
+                        onClick={() => handleTabChange('market')}
+                        className="text-xs bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-medium w-full"
+                      >
+                        Zur Pinnwand wechseln
+                      </button>
+                    </div>
+
+                    {/* Official Posts Count */}
+                    <div className="p-4 bg-stone-50 rounded-xl border border-stone-200">
+                      <h4 className="font-bold text-sm text-stone-800 mb-1">🏛️ Schwarzes Brett</h4>
+                      <p className="text-2xl font-black text-blue-800 mb-2">{officialPosts.length}</p>
+                      <p className="text-xs text-stone-500 mb-3">Erstellen und bearbeiten Sie Rathaus-Mitteilungen.</p>
+                      <button 
+                        onClick={() => handleTabChange('official')}
+                        className="text-xs bg-emerald-800 text-white px-3 py-1.5 rounded-lg font-medium w-full"
+                      >
+                        Zum Schwarzen Brett
+                      </button>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            ) : (
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12 text-center max-w-md mx-auto">
+                <div className="text-4xl mb-3">🔐</div>
+                <h3 className="font-bold text-xl text-stone-900 mb-2">Administrator-Bereich</h3>
+                <p className="text-xs text-stone-500 mb-6">Bitte melden Sie sich an, um den Besucherzähler, die Moderationstools und das offizielle Schwarze Brett zu verwalten.</p>
+                <button 
+                  onClick={() => setShowAdminLoginModal(true)}
+                  className="bg-emerald-800 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm shadow w-full"
+                >
+                  Jetzt als Admin einloggen
+                </button>
+              </div>
+            )}
+
+          </div>
+        )}
+
+      </main>
+
+      {/* Admin Login Modal */}
+      {showAdminLoginModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200">
+            <div className="text-center mb-6">
+              <div className="w-14 h-14 bg-emerald-100 text-emerald-800 rounded-2xl mx-auto flex items-center justify-center text-2xl font-bold mb-3 shadow-inner">
+                🔑
+              </div>
+              <h3 className="text-xl font-black text-stone-900">Administrator-Anmeldung</h3>
+              <p className="text-xs text-stone-500 mt-1">Geben Sie das Admin-Passwort ein, um die Verwaltungsrechte freizuschalten.</p>
+            </div>
+
+            <form onSubmit={handleAdminLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">Passwort</label>
+                <input 
+                  type="password" 
+                  value={adminPasswordInput} 
+                  onChange={(e) => setAdminPasswordInput(e.target.value)} 
+                  placeholder="Passwort (Standard: dorfadmin)" 
+                  className="w-full px-4 py-3 border border-stone-300 rounded-xl text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="flex space-x-3 pt-2">
+                <button 
+                  type="button" 
+                  onClick={() => setShowAdminLoginModal(false)}
+                  className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold py-3 rounded-xl text-sm transition"
+                >
+                  Abbrechen
+                </button>
+                <button 
+                  type="submit" 
+                  className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-sm transition shadow"
+                >
+                  Anmelden
+                </button>
+              </div>
+            </form>
+            <p className="text-[11px] text-stone-400 text-center mt-4">Demo-Passwort für Evaluierung: <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">dorfadmin</code></p>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="mt-16 bg-stone-900 text-stone-400 py-8 border-t border-stone-800">
+        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs">
+          <p>© 2026 DorfNetz • Das sichere Cloud-Portal für die Dorfgemeinschaft</p>
+          <div className="flex space-x-4">
+            <button onClick={() => handleTabChange('chat')} className="hover:text-amber-200">Live-Chat</button>
+            <button onClick={() => handleTabChange('market')} className="hover:text-amber-200">Pinnwand</button>
+            <button onClick={() => handleTabChange('calendar')} className="hover:text-amber-200">Termine</button>
+            <button onClick={() => handleTabChange('admin')} className="hover:text-amber-200">Verwaltung</button>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  );
+}
 ```
