@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsere Dorf-App mit Push & Live-Status</title>
+    <title>Unsere Dorf-App mit Push, Live & Admin-Moderation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
@@ -79,7 +79,7 @@
 
                     <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
                         <h4 class="font-bold text-emerald-900 mb-1 text-xs">🟢 Live-Status</h4>
-                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">Verbindung zur Cloud wird initialisiert...</p>
+                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">Verbindung zur Cloud wird aufgebaut...</p>
                     </div>
                 </div>
             </div>
@@ -177,81 +177,87 @@
 
             <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-3">
                 <h3 class="text-base font-bold text-slate-800">🔐 Admin-Bereich</h3>
-                <p class="text-xs text-slate-600">Geben Sie das Admin-Passwort ein, um den Besucherzähler einzusehen.</p>
+                <p class="text-xs text-slate-600">Geben Sie das Admin-Passwort ein, um den Admin-Modus zu entsperren (Passwort: <code class="bg-slate-100 px-1 py-0.5 rounded text-emerald-700 font-bold">dorf123</code>).</p>
                 <div class="flex gap-2">
                     <input type="password" id="admin-pass-input" placeholder="Admin-Passwort (z.B. dorf123)" class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
                     <button onclick="checkAdminLogin()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Entsperren</button>
                 </div>
                 <p id="admin-msg" class="text-[11px] text-slate-500"></p>
+
+                <!-- Admin-Tools für Marktplatz -->
+                <div id="admin-tools-box" class="pt-3 border-t border-slate-100 hidden space-y-3">
+                    <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-100">
+                        <h4 class="font-bold text-emerald-900 text-xs mb-1">🛠️ Offizielle Gemeinde-Anzeige aufgeben</h4>
+                        <p class="text-[11px] text-emerald-800 mb-2">Als Admin können Sie direkt eine hervorgehobene Info auf dem Marktplatz platzieren.</p>
+                        <form onsubmit="handleAdminMarketSubmit(event)" class="space-y-2 text-xs">
+                            <input type="text" id="adm-m-title" placeholder="Titel (z.B. Wichtige Bekanntmachung Bauhof)" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white" required>
+                            <textarea id="adm-m-desc" rows="2" placeholder="Beschreibung..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white" required></textarea>
+                            <button type="submit" class="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-semibold py-1.5 rounded-xl transition shadow-xs">Als Admin auf dem Marktplatz veröffentlichen</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- MODAL KLEINANZEIGE -->
-    <div id="market-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-sm text-slate-800">Neue Kleinanzeige aufgeben</h3>
-                <button onclick="closeModal('market-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-            </div>
-            <form id="market-form" onsubmit="handleMarketSubmit(event)" class="space-y-2.5 text-xs">
+    <!-- MODALS -->
+    <div id="market-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-lg space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm">Neue Anzeige auf dem Schwarzen Brett</h3>
+            <form id="market-form" onsubmit="handleMarketSubmit(event)" class="space-y-3 text-xs">
                 <div>
                     <label class="block font-medium text-slate-700 mb-1">Kategorie</label>
-                    <select id="m-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500">
+                    <select id="m-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 bg-white">
                         <option value="Biete">Biete</option>
                         <option value="Suche">Suche</option>
                     </select>
                 </div>
                 <div>
                     <label class="block font-medium text-slate-700 mb-1">Titel</label>
-                    <input type="text" id="m-title" placeholder="z.B. Kinderfahrrad" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    <input type="text" id="m-title" placeholder="z.B. Rasenmäher abzugeben" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                 </div>
                 <div>
                     <label class="block font-medium text-slate-700 mb-1">Beschreibung</label>
-                    <textarea id="m-desc" rows="2" placeholder="Kurze Beschreibung..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required></textarea>
+                    <textarea id="m-desc" rows="3" placeholder="Details zur Anzeige..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required></textarea>
                 </div>
                 <div>
-                    <label class="block font-medium text-slate-700 mb-1">Kontakt</label>
-                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    <label class="block font-medium text-slate-700 mb-1">Kontakt (Name / Telefon)</label>
+                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller, Tel. 1234" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                 </div>
-                <div class="flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Veröffentlichen</button>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600">Abbrechen</button>
+                    <button type="submit" class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-semibold">Veröffentlichen</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- MODAL TERMIN -->
-    <div id="event-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-sm text-slate-800">Neuen Termin eintragen</h3>
-                <button onclick="closeModal('event-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-            </div>
-            <form id="event-form" onsubmit="handleEventSubmit(event)" class="space-y-2.5 text-xs">
+    <div id="event-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 shadow-lg space-y-4">
+            <h3 class="font-bold text-slate-800 text-sm">Neuen Termin eintragen</h3>
+            <form id="event-form" onsubmit="handleEventSubmit(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-medium text-slate-700 mb-1">Veranstaltungstitel</label>
-                    <input type="text" id="e-title" placeholder="z.B. Feuerwehrversammlung" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    <label class="block font-medium text-slate-700 mb-1">Veranstaltung</label>
+                    <input type="text" id="e-title" placeholder="z.B. Dorffest am See" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block font-medium text-slate-700 mb-1">Datum</label>
-                        <input type="date" id="e-date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                        <input type="date" id="e-date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                     </div>
                     <div>
                         <label class="block font-medium text-slate-700 mb-1">Uhrzeit</label>
-                        <input type="text" id="e-time" placeholder="19:00 Uhr" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                        <input type="text" id="e-time" placeholder="z.B. 14:00 Uhr" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                     </div>
                 </div>
                 <div>
                     <label class="block font-medium text-slate-700 mb-1">Ort</label>
-                    <input type="text" id="e-location" placeholder="Dorfgemeinschaftshaus" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    <input type="text" id="e-location" placeholder="z.B. Dorfgemeinschaftshaus" class="w-full px-3 py-1.5 rounded-xl border border-slate-300" required>
                 </div>
-                <div class="flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="closeModal('event-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Speichern</button>
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal('event-modal')" class="px-3 py-1.5 rounded-xl border border-slate-300 text-slate-600">Abbrechen</button>
+                    <button type="submit" class="bg-emerald-600 text-white px-4 py-1.5 rounded-xl font-semibold">Termin speichern</button>
                 </div>
             </form>
         </div>
@@ -260,7 +266,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v2';
         let firebaseConfig = {};
@@ -358,6 +364,10 @@
                 document.getElementById('admin-msg').textContent = "Admin-Modus erfolgreich aktiviert!";
                 document.getElementById('admin-msg').className = "text-[11px] text-emerald-600 font-bold";
                 applyAdminUI();
+                renderNews();
+                renderMarketplace();
+                renderEvents();
+                renderChat();
             } else {
                 document.getElementById('admin-msg').textContent = "Falsches Passwort!";
                 document.getElementById('admin-msg').className = "text-[11px] text-red-600 font-bold";
@@ -366,8 +376,39 @@
 
         function applyAdminUI() {
             if (isAdmin) {
-                document.getElementById('admin-counter-box').classList.remove('hidden');
-                document.getElementById('admin-badge').textContent = "Modus: Administrator 🔒";
+                const counterBox = document.getElementById('admin-counter-box');
+                if(counterBox) counterBox.classList.remove('hidden');
+                const badge = document.getElementById('admin-badge');
+                if(badge) badge.textContent = "Modus: Administrator 🔒";
+                const toolsBox = document.getElementById('admin-tools-box');
+                if(toolsBox) toolsBox.classList.remove('hidden');
+            }
+        }
+
+        window.handleAdminMarketSubmit = async function(e) {
+            e.preventDefault();
+            const title = document.getElementById('adm-m-title').value;
+            const desc = document.getElementById('adm-m-desc').value;
+            const type = "Biete";
+            const contact = "Gemeindebüro (Offiziell)";
+            const date = new Date().toLocaleDateString('de-DE');
+
+            try {
+                if(!db) throw new Error();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'), {
+                    type, title, desc, contact, date, createdAt: Date.now()
+                });
+                document.getElementById('adm-m-title').value = '';
+                document.getElementById('adm-m-desc').value = '';
+                alert("Offizielle Anzeige erfolgreich auf dem Marktplatz veröffentlicht!");
+                triggerPush('market', 'Offiziell: ' + title, desc);
+            } catch (err) {
+                marketItems.unshift({ id: 'local_' + Math.random(), type, title, desc, contact, date, createdAt: Date.now() });
+                renderMarketplace();
+                document.getElementById('adm-m-title').value = '';
+                document.getElementById('adm-m-desc').value = '';
+                alert("Offizielle Anzeige lokal auf dem Marktplatz veröffentlicht!");
+                triggerPush('market', 'Offiziell: ' + title, desc);
             }
         }
 
@@ -390,14 +431,17 @@
                 } else {
                     await setDoc(visitorRef, { count: 1, list: [userId] });
                 }
-                document.getElementById('visitor-count').textContent = count;
+                const visitorCountEl = document.getElementById('visitor-count');
+                if(visitorCountEl) visitorCountEl.textContent = count;
             } catch (e) {
-                document.getElementById('visitor-count').textContent = "1 (Lokal)";
+                const visitorCountEl = document.getElementById('visitor-count');
+                if(visitorCountEl) visitorCountEl.textContent = "1 (Lokal)";
             }
         }
 
         window.updateChatPresence = async function() {
-            const name = document.getElementById('chat-author').value.trim() || "Anonym";
+            const authorInput = document.getElementById('chat-author');
+            const name = authorInput ? (authorInput.value.trim() || "Anonym") : "Anonym";
             if (!db) return;
             try {
                 const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
@@ -419,18 +463,22 @@
                         onlineCount++;
                     }
                 });
-                document.getElementById('online-users-count').textContent = Math.max(1, onlineCount);
+                const onlineCountEl = document.getElementById('online-users-count');
+                if(onlineCountEl) onlineCountEl.textContent = Math.max(1, onlineCount);
             });
         }
 
         function renderNews() {
             const container = document.getElementById('news-container');
             if(!container) return;
-            container.innerHTML = newsItems.map(n => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+            container.innerHTML = newsItems.map((n, index) => `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 relative group">
                     <div class="flex justify-between items-center mb-1">
                         <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
-                        <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
+                            ${isAdmin ? `<button onclick="deleteNewsItem(${index})" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Bekanntmachung löschen">🗑️</button>` : ''}
+                        </div>
                     </div>
                     <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
                     <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
@@ -438,663 +486,43 @@
             `).join('');
         }
 
-        function renderChat() {
-            const container = document.getElementById('chat-messages');
-            if(!container) return;
-            container.innerHTML = chatMessages.map(m => `
-                <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100">
-                    <div class="flex justify-between items-baseline mb-0.5">
-                        <span class="font-bold text-[11px] text-emerald-800">${escapeHtml(m.author)}</span>
-                        <span class="text-[9px] text-slate-400">${escapeHtml(m.time)}</span>
-                    </div>
-                    <p class="text-xs text-slate-700">${escapeHtml(m.text)}</p>
-                </div>
-            `).join('');
-            scrollToBottom();
-        }
-
-        window.handleChatSubmit = async function(e) {
-            e.preventDefault();
-            const author = document.getElementById('chat-author').value;
-            const text = document.getElementById('chat-input').value;
-            const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-            
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
-                    author, text, time, createdAt: Date.now()
-                });
-                document.getElementById('chat-input').value = '';
-                triggerPush('chat', author, text);
-            } catch (err) {
-                chatMessages.push({ author, text, time, createdAt: Date.now() });
-                renderChat();
-                document.getElementById('chat-input').value = '';
-                triggerPush('chat', author, text);
-            }
-        }
-
-        window.renderMarketplace = function() {
-            const filter = document.getElementById('market-filter').value;
-            const grid = document.getElementById('market-grid');
-            if(!grid) return;
-            const filtered = marketItems.filter(item => filter === 'all' || item.type === filter);
-
-            grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs">
-                    <div>
-                        <div class="flex justify-between items-start mb-1.5">
-                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${escapeHtml(item.type)}</span>
-                            <span class="text-[9px] text-slate-400">${escapeHtml(item.date)}</span>
-                        </div>
-                        <h4 class="font-bold text-slate-800 mb-1">${escapeHtml(item.title)}</h4>
-                        <p class="text-[11px] text-slate-600 mb-3 leading-relaxed">${escapeHtml(item.desc)}</p>
-                    </div>
-                    <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
-                        Kontakt: <strong class="text-slate-700">${escapeHtml(item.contact)}</strong>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        window.handleMarketSubmit = async function(e) {
-            e.preventDefault();
-            const type = document.getElementById('m-type').value;
-            const title = document.getElementById('m-title').value;
-            const desc = document.getElementById('m-desc').value;
-            const contact = document.getElementById('m-contact').value;
-            const date = new Date().toLocaleDateString('de-DE');
-
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'), {
-                    type, title, desc, contact, date, createdAt: Date.now()
-                });
-                closeModal('market-modal');
-                document.getElementById('market-form').reset();
-                triggerPush('market', type + ': ' + title, desc);
-            } catch (err) {
-                marketItems.unshift({ type, title, desc, contact, date, createdAt: Date.now() });
-                renderMarketplace();
-                closeModal('market-modal');
-                document.getElementById('market-form').reset();
-                triggerPush('market', type + ': ' + title, desc);
-            }
-        }
-
-        function renderEvents() {
-            const container = document.getElementById('events-list');
-            if(!container) return;
-            container.innerHTML = eventItems.map(ev => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start gap-3 text-xs">
-                    <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
-                        <span class="block text-[9px] font-semibold uppercase">Datum</span>
-                        <span class="block text-xs font-bold">${escapeHtml(ev.date.substring(0,5))}</span>
-                    </div>
-                    <div class="flex-grow">
-                        <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
-                        <p class="text-[11px] text-slate-500 mb-0.5">🕒 ${escapeHtml(ev.time)}</p>
-                        <p class="text-[11px] text-slate-600">📍 ${escapeHtml(ev.location)}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        window.handleEventSubmit = async function(e) {
-            e.preventDefault();
-            const title = document.getElementById('e-title').value;
-            const rawDate = document.getElementById('e-date').value;
-            const time = document.getElementById('e-time').value;
-            const location = document.getElementById('e-location').value;
-
-            let formattedDate = rawDate;
-            if(rawDate) {
-                const parts = rawDate.split('-');
-                if(parts.length === 3) formattedDate = `${parts[2]}.${parts[1]}.${parts[0]}`;
-            }
-
-            try {
-                if(!db) throw new Error();
-                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
-                    title, date: formattedDate, time, location, createdAt: Date.now()
-                });
-                closeModal('event-modal');
-                document.getElementById('event-form').reset();
-                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
-            } catch (err) {
-                eventItems.push({ title, date: formattedDate, time, location, createdAt: Date.now() });
-                renderEvents();
-                closeModal('event-modal');
-                document.getElementById('event-form').reset();
-                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
-            }
-        }
-
-        async function initApp() {
-            document.getElementById('sub-news').checked = subscriptions.news;
-            document.getElementById('sub-market').checked = subscriptions.market;
-            document.getElementById('sub-events').checked = subscriptions.events;
-            document.getElementById('sub-chat').checked = subscriptions.chat;
-
-            if (Notification.permission === 'granted') {
-                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
-                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
-            }
-
-            if (isAdmin) applyAdminUI();
-
-            try {
-                if (auth) {
-                    document.getElementById('sync-status').textContent = "Authentifiziere in der Cloud...";
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                }
-
-                document.getElementById('sync-status').textContent = "Echtzeit-Verbindung zur Cloud aktiv.";
-                
-                registerVisitor();
-                listenOnlineUsers();
-
-                setInterval(() => {
-                    updateChatPresence();
-                }, 10000);
-
-                if(db) {
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat')), (snapshot) => {
-                        chatMessages = [];
-                        snapshot.forEach(docSnap => chatMessages.push({ id: docSnap.id, ...docSnap.data() }));
-                        chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                        renderChat();
-                    }, (err) => {});
-
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace')), (snapshot) => {
-                        marketItems = [];
-                        snapshot.forEach(docSnap => marketItems.push({ id: docSnap.id, ...docSnap.data() }));
-                        marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-                        renderMarketplace();
-                    }, (err) => {});
-
-                    onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snapshot) => {
-                        eventItems = [];
-                        snapshot.forEach(docSnap => eventItems.push({ id: docSnap.id, ...docSnap.data() }));
-                        eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                        renderEvents();
-                    }, (err) => {});
-                }
-            } catch (err) {
-                document.getElementById('sync-status').textContent = "Lokaler Modus aktiv.";
-                renderChat();
-                renderMarketplace();
-                renderEvents();
-            }
-        }
-
-        window.onload = function() {
+        window.deleteNewsItem = function(index) {
+            if(!isAdmin) return;
+            newsItems.splice(index, 1);
             renderNews();
-            renderChat();
-            renderMarketplace();
-            renderEvents();
-            initApp();
-        };
-    </script>
-</body>
-</html>
-``````html
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsere Dorf-App mit Push & Live-Status</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body { font-family: system-ui, -apple-system, sans-serif; }
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
-
-    <header class="bg-emerald-700 text-white shadow-sm sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-emerald-600 p-2 rounded-xl border border-emerald-500">
-                    <svg class="w-5 h-5 text-emerald-100" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                </div>
-                <div>
-                    <h1 class="text-base font-bold tracking-tight">Dorf-Treffpunkt</h1>
-                    <p id="admin-badge" class="text-[11px] text-emerald-200">Zentral verbunden im Ort</p>
-                </div>
-            </div>
-            <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
-                <button onclick="switchTab('feed')" id="btn-feed" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800 text-white shadow-xs">Pinnwand</button>
-                <button onclick="switchTab('chat')" id="btn-chat" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Dorf-Chat</button>
-                <button onclick="switchTab('marketplace')" id="btn-marketplace" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Suche & Biete</button>
-                <button onclick="switchTab('events')" id="btn-events" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Termine</button>
-                <button onclick="switchTab('settings')" id="btn-settings" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">🔔 Push & Admin</button>
-            </nav>
-        </div>
-    </header>
-
-    <main class="max-w-6xl mx-auto px-4 py-5 flex-grow w-full grid grid-cols-1 gap-5">
-
-        <!-- 1. PINNWAND & NEUIGKEITEN -->
-        <section id="section-feed" class="tab-content space-y-5">
-            <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
-                <div class="relative z-10 max-w-2xl">
-                    <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Echtzeit-Dorfnetzwerk</span>
-                    <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer vernetzten Dorfgemeinschaft!</h2>
-                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Hier finden Sie alle Neuigkeiten und Sparten. Aktivieren Sie Push-Benachrichtigungen, um keine Änderung zu verpassen.</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                <div class="md:col-span-2 space-y-3">
-                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                        <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-                        Orts-Nachrichten & Sparten
-                    </h3>
-                    <div id="news-container" class="space-y-3"></div>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
-                        <h4 class="font-bold text-slate-800 mb-2 text-sm flex items-center gap-1.5">
-                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                            Gemeindebüro Info
-                        </h4>
-                        <div class="text-[11px] text-slate-600 space-y-1.5">
-                            <p><strong class="text-slate-700">Öffnungszeiten:</strong><br>Di: 09:00 - 12:00 | Do: 15:00 - 18:00</p>
-                            <p><strong class="text-slate-700">Bürgermeistersprechstunde:</strong><br>Donnerstag ab 17:00 Uhr</p>
-                            <p><strong class="text-slate-700">Bauhof-Notruf:</strong><br>0150-12345678</p>
-                        </div>
-                    </div>
-
-                    <div id="admin-counter-box" class="bg-amber-50 rounded-2xl p-4 border border-amber-200 hidden">
-                        <h4 class="font-bold text-amber-900 mb-1 text-xs">🔒 Admin-Besucherzähler</h4>
-                        <p class="text-[11px] text-amber-800">
-                            Bisherige App-Besucher: <strong id="visitor-count" class="text-amber-950 text-sm">...</strong>
-                        </p>
-                    </div>
-
-                    <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
-                        <h4 class="font-bold text-emerald-900 mb-1 text-xs">🟢 Live-Status</h4>
-                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">Verbindung zur Cloud wird initialisiert...</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 2. CHAT BEREICH -->
-        <section id="section-chat" class="tab-content hidden flex flex-col h-[70vh] bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-            <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch (Live)</h3>
-                    <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <div class="bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-2xs text-[11px] flex items-center gap-1.5">
-                        <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-                        <span class="text-slate-600 font-medium">Online im Chat:</span>
-                        <span id="online-users-count" class="font-bold text-emerald-700">1</span>
-                    </div>
-                </div>
-            </div>
-
-            <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-2.5 bg-slate-50/40"></div>
-
-            <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-2.5 bg-white border-t border-slate-200 flex gap-2">
-                <input type="text" id="chat-author" placeholder="Ihr Name" oninput="updateChatPresence()" class="w-1/3 sm:w-1/4 px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
-                <input type="text" id="chat-input" placeholder="Nachricht schreiben..." class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
-                <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Senden</button>
-            </form>
-        </section>
-
-        <!-- 3. SCHWARZES BRETT -->
-        <section id="section-marketplace" class="tab-content hidden space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Schwarzes Brett: Suche & Biete</h3>
-                    <p class="text-[11px] text-slate-500">Zentrale Kleinanzeigen (Sparte: Marktplatz)</p>
-                </div>
-                <div class="flex gap-2 w-full sm:w-auto">
-                    <select id="market-filter" onchange="renderMarketplace()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                        <option value="all">Alle Anzeigen</option>
-                        <option value="Biete">Biete</option>
-                        <option value="Suche">Suche</option>
-                    </select>
-                    <button onclick="openModal('market-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs whitespace-nowrap">+ Anzeige</button>
-                </div>
-            </div>
-            <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
-        </section>
-
-        <!-- 4. TERMINE -->
-        <section id="section-events" class="tab-content hidden space-y-4">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
-                <div>
-                    <h3 class="text-base font-bold text-slate-800">Dorf-Termine & Veranstaltungen</h3>
-                    <p class="text-[11px] text-slate-500">Gemeinsame Termine (Sparte: Termine)</p>
-                </div>
-                <button onclick="openModal('event-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">+ Termin</button>
-            </div>
-            <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
-        </section>
-
-        <!-- 5. PUSH & ADMIN EINSTELLUNGEN -->
-        <section id="section-settings" class="tab-content hidden space-y-4 max-w-xl mx-auto w-full">
-            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-4">
-                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
-                    🔔 Push-Benachrichtigungen nach Sparten
-                </h3>
-                <p class="text-xs text-slate-600">Wählen Sie aus, für welche Sparten Sie eine Benachrichtigung erhalten möchten, sobald sich dort etwas ändert.</p>
-                
-                <div class="space-y-3 pt-2">
-                    <button onclick="requestPushPermission()" id="push-perm-btn" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-xl text-xs transition border border-slate-300">
-                        Browser-Benachrichtigungen erlauben
-                    </button>
-
-                    <div class="space-y-2 pt-2 border-t border-slate-100">
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">📢 Alle Dorfnachrichten & Bekanntmachungen</span>
-                            <input type="checkbox" id="sub-news" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">🛒 Schwarzes Brett (Suche & Biete)</span>
-                            <input type="checkbox" id="sub-market" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">📅 Termine & Veranstaltungen</span>
-                            <input type="checkbox" id="sub-events" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
-                            <span class="text-xs font-medium text-slate-700">💬 Dorf-Chat Aktivitäten</span>
-                            <input type="checkbox" id="sub-chat" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
-                        </label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-3">
-                <h3 class="text-base font-bold text-slate-800">🔐 Admin-Bereich</h3>
-                <p class="text-xs text-slate-600">Geben Sie das Admin-Passwort ein, um den Besucherzähler einzusehen.</p>
-                <div class="flex gap-2">
-                    <input type="password" id="admin-pass-input" placeholder="Admin-Passwort (z.B. dorf123)" class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
-                    <button onclick="checkAdminLogin()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Entsperren</button>
-                </div>
-                <p id="admin-msg" class="text-[11px] text-slate-500"></p>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- MODAL KLEINANZEIGE -->
-    <div id="market-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-sm text-slate-800">Neue Kleinanzeige aufgeben</h3>
-                <button onclick="closeModal('market-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-            </div>
-            <form id="market-form" onsubmit="handleMarketSubmit(event)" class="space-y-2.5 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Kategorie</label>
-                    <select id="m-type" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500">
-                        <option value="Biete">Biete</option>
-                        <option value="Suche">Suche</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Titel</label>
-                    <input type="text" id="m-title" placeholder="z.B. Kinderfahrrad" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Beschreibung</label>
-                    <textarea id="m-desc" rows="2" placeholder="Kurze Beschreibung..." class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required></textarea>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Kontakt</label>
-                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div class="flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Veröffentlichen</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL TERMIN -->
-    <div id="event-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl space-y-3">
-            <div class="flex justify-between items-center">
-                <h3 class="font-bold text-sm text-slate-800">Neuen Termin eintragen</h3>
-                <button onclick="closeModal('event-modal')" class="text-slate-400 hover:text-slate-600 font-bold">&times;</button>
-            </div>
-            <form id="event-form" onsubmit="handleEventSubmit(event)" class="space-y-2.5 text-xs">
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Veranstaltungstitel</label>
-                    <input type="text" id="e-title" placeholder="z.B. Feuerwehrversammlung" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="block font-medium text-slate-700 mb-1">Datum</label>
-                        <input type="date" id="e-date" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                    </div>
-                    <div>
-                        <label class="block font-medium text-slate-700 mb-1">Uhrzeit</label>
-                        <input type="text" id="e-time" placeholder="19:00 Uhr" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                    </div>
-                </div>
-                <div>
-                    <label class="block font-medium text-slate-700 mb-1">Ort</label>
-                    <input type="text" id="e-location" placeholder="Dorfgemeinschaftshaus" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
-                </div>
-                <div class="flex justify-end gap-2 pt-1">
-                    <button type="button" onclick="closeModal('event-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
-                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl font-semibold shadow-xs">Speichern</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v2';
-        let firebaseConfig = {};
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                firebaseConfig = JSON.parse(__firebase_config);
-            }
-        } catch(e) {}
-
-        if (!firebaseConfig.apiKey) {
-            firebaseConfig = { apiKey: "AIzaSyDorfAppPublicFallbackKey12345", authDomain: "dorfapp.firebaseapp.com", projectId: "dorfapp-shared" };
-        }
-
-        let db, auth, userId = 'user_' + Math.random().toString(36).substring(2, 9);
-        try {
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-        } catch (e) {}
-
-        let chatMessages = [];
-        let marketItems = [];
-        let eventItems = [];
-        let newsItems = [
-            { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen.", category: "news" },
-            { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!", category: "news" }
-        ];
-
-        let subscriptions = JSON.parse(localStorage.getItem('dorf_subs') || '{"news":true, "market":true, "events":true, "chat":false}');
-        let isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
-
-        window.switchTab = function(tabId) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(el => {
-                el.classList.remove('bg-emerald-800', 'text-white', 'shadow-xs');
-                el.classList.add('text-emerald-100', 'hover:bg-emerald-600');
-            });
-
-            document.getElementById('section-' + tabId).classList.remove('hidden');
-            const activeBtn = document.getElementById('btn-' + tabId);
-            activeBtn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
-            activeBtn.classList.remove('text-emerald-100', 'hover:bg-emerald-600');
-
-            if(tabId === 'chat') scrollToBottom();
-        }
-
-        window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); }
-        window.closeModal = function(id) { document.getElementById(id).classList.add('hidden'); }
-
-        function scrollToBottom() {
-            const container = document.getElementById('chat-messages');
-            if(container) container.scrollTop = container.scrollHeight;
-        }
-
-        function escapeHtml(str) {
-            if(!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        window.requestPushPermission = async function() {
-            if (!('Notification' in window)) {
-                alert("Ihr Browser unterstützt keine Push-Benachrichtigungen.");
-                return;
-            }
-            const perm = await Notification.requestPermission();
-            if (perm === 'granted') {
-                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
-                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
-                new Notification("Dorf-App", { body: "Push-Benachrichtigungen wurden erfolgreich aktiviert!" });
-            } else {
-                alert("Benachrichtigungen wurden blockiert.");
-            }
-        }
-
-        window.saveSubscriptions = function() {
-            subscriptions.news = document.getElementById('sub-news').checked;
-            subscriptions.market = document.getElementById('sub-market').checked;
-            subscriptions.events = document.getElementById('sub-events').checked;
-            subscriptions.chat = document.getElementById('sub-chat').checked;
-            localStorage.setItem('dorf_subs', JSON.stringify(subscriptions));
-        }
-
-        function triggerPush(category, title, bodyText) {
-            if (!subscriptions[category]) return;
-            if (Notification.permission === 'granted') {
-                new Notification("Dorf-Update: " + title, { body: bodyText });
-            }
-        }
-
-        window.checkAdminLogin = function() {
-            const pass = document.getElementById('admin-pass-input').value;
-            if (pass === 'dorf123' || pass === 'admin') {
-                isAdmin = true;
-                localStorage.setItem('dorf_is_admin', 'true');
-                document.getElementById('admin-msg').textContent = "Admin-Modus erfolgreich aktiviert!";
-                document.getElementById('admin-msg').className = "text-[11px] text-emerald-600 font-bold";
-                applyAdminUI();
-            } else {
-                document.getElementById('admin-msg').textContent = "Falsches Passwort!";
-                document.getElementById('admin-msg').className = "text-[11px] text-red-600 font-bold";
-            }
-        }
-
-        function applyAdminUI() {
-            if (isAdmin) {
-                document.getElementById('admin-counter-box').classList.remove('hidden');
-                document.getElementById('admin-badge').textContent = "Modus: Administrator 🔒";
-            }
-        }
-
-        async function registerVisitor() {
-            if (!db) return;
-            try {
-                const visitorRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
-                const snap = await getDoc(visitorRef);
-                let count = 1;
-                if (snap.exists()) {
-                    const data = snap.data();
-                    const visitorsList = data.list || [];
-                    if (!visitorsList.includes(userId)) {
-                        visitorsList.push(userId);
-                        count = visitorsList.length;
-                        await updateDoc(visitorRef, { count, list: visitorsList });
-                    } else {
-                        count = visitorsList.length;
-                    }
-                } else {
-                    await setDoc(visitorRef, { count: 1, list: [userId] });
-                }
-                document.getElementById('visitor-count').textContent = count;
-            } catch (e) {
-                document.getElementById('visitor-count').textContent = "1 (Lokal)";
-            }
-        }
-
-        window.updateChatPresence = async function() {
-            const name = document.getElementById('chat-author').value.trim() || "Anonym";
-            if (!db) return;
-            try {
-                const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
-                await setDoc(presenceRef, {
-                    name: name,
-                    lastSeen: Date.now()
-                }, { merge: true });
-            } catch(e) {}
-        }
-
-        function listenOnlineUsers() {
-            if (!db) return;
-            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'presence')), (snapshot) => {
-                let onlineCount = 0;
-                const now = Date.now();
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    if (data.lastSeen && (now - data.lastSeen < 30000)) {
-                        onlineCount++;
-                    }
-                });
-                document.getElementById('online-users-count').textContent = Math.max(1, onlineCount);
-            });
-        }
-
-        function renderNews() {
-            const container = document.getElementById('news-container');
-            if(!container) return;
-            container.innerHTML = newsItems.map(n => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
-                        <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
-                    </div>
-                    <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
-                </div>
-            `).join('');
         }
 
         function renderChat() {
             const container = document.getElementById('chat-messages');
             if(!container) return;
             container.innerHTML = chatMessages.map(m => `
-                <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100">
+                <div class="flex flex-col bg-white p-2.5 rounded-xl shadow-2xs border border-slate-100 relative group">
                     <div class="flex justify-between items-baseline mb-0.5">
                         <span class="font-bold text-[11px] text-emerald-800">${escapeHtml(m.author)}</span>
-                        <span class="text-[9px] text-slate-400">${escapeHtml(m.time)}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] text-slate-400">${escapeHtml(m.time)}</span>
+                            ${isAdmin ? `<button onclick="deleteChatMessage('${m.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Nachricht löschen">🗑️</button>` : ''}
+                        </div>
                     </div>
                     <p class="text-xs text-slate-700">${escapeHtml(m.text)}</p>
                 </div>
             `).join('');
             scrollToBottom();
+        }
+
+        window.deleteChatMessage = async function(id) {
+            if(!isAdmin) return;
+            try {
+                if(db && !id.toString().startsWith('local_')) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'chat', id));
+                } else {
+                    chatMessages = chatMessages.filter(m => m.id !== id);
+                    renderChat();
+                }
+            } catch(e) {
+                chatMessages = chatMessages.filter(m => m.id !== id);
+                renderChat();
+            }
         }
 
         window.handleChatSubmit = async function(e) {
@@ -1111,7 +539,7 @@
                 document.getElementById('chat-input').value = '';
                 triggerPush('chat', author, text);
             } catch (err) {
-                chatMessages.push({ author, text, time, createdAt: Date.now() });
+                chatMessages.push({ id: 'local_' + Math.random(), author, text, time, createdAt: Date.now() });
                 renderChat();
                 document.getElementById('chat-input').value = '';
                 triggerPush('chat', author, text);
@@ -1119,17 +547,21 @@
         }
 
         window.renderMarketplace = function() {
-            const filter = document.getElementById('market-filter').value;
+            const filterEl = document.getElementById('market-filter');
+            const filter = filterEl ? filterEl.value : 'all';
             const grid = document.getElementById('market-grid');
             if(!grid) return;
             const filtered = marketItems.filter(item => filter === 'all' || item.type === filter);
 
             grid.innerHTML = filtered.map(item => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs">
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex flex-col justify-between text-xs relative">
                     <div>
                         <div class="flex justify-between items-start mb-1.5">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${item.type === 'Biete' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${escapeHtml(item.type)}</span>
-                            <span class="text-[9px] text-slate-400">${escapeHtml(item.date)}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[9px] text-slate-400">${escapeHtml(item.date)}</span>
+                                ${isAdmin ? `<button onclick="deleteMarketItem('${item.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Anzeige löschen">🗑️</button>` : ''}
+                            </div>
                         </div>
                         <h4 class="font-bold text-slate-800 mb-1">${escapeHtml(item.title)}</h4>
                         <p class="text-[11px] text-slate-600 mb-3 leading-relaxed">${escapeHtml(item.desc)}</p>
@@ -1139,6 +571,21 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        window.deleteMarketItem = async function(id) {
+            if(!isAdmin) return;
+            try {
+                if(db && !id.toString().startsWith('local_')) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'marketplace', id));
+                } else {
+                    marketItems = marketItems.filter(i => i.id !== id);
+                    renderMarketplace();
+                }
+            } catch(e) {
+                marketItems = marketItems.filter(i => i.id !== id);
+                renderMarketplace();
+            }
         }
 
         window.handleMarketSubmit = async function(e) {
@@ -1158,7 +605,7 @@
                 document.getElementById('market-form').reset();
                 triggerPush('market', type + ': ' + title, desc);
             } catch (err) {
-                marketItems.unshift({ type, title, desc, contact, date, createdAt: Date.now() });
+                marketItems.unshift({ id: 'local_' + Math.random(), type, title, desc, contact, date, createdAt: Date.now() });
                 renderMarketplace();
                 closeModal('market-modal');
                 document.getElementById('market-form').reset();
@@ -1170,18 +617,36 @@
             const container = document.getElementById('events-list');
             if(!container) return;
             container.innerHTML = eventItems.map(ev => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start gap-3 text-xs">
-                    <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
-                        <span class="block text-[9px] font-semibold uppercase">Datum</span>
-                        <span class="block text-xs font-bold">${escapeHtml(ev.date.substring(0,5))}</span>
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200 flex items-start justify-between gap-3 text-xs relative">
+                    <div class="flex items-start gap-3">
+                        <div class="bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-xl p-2.5 text-center min-w-[60px]">
+                            <span class="block text-[9px] font-semibold uppercase">Datum</span>
+                            <span class="block text-xs font-bold">${escapeHtml(ev.date.substring(0,5))}</span>
+                        </div>
+                        <div class="flex-grow">
+                            <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
+                            <p class="text-[11px] text-slate-500 mb-0.5">🕒 ${escapeHtml(ev.time)}</p>
+                            <p class="text-[11px] text-slate-600">📍 ${escapeHtml(ev.location)}</p>
+                        </div>
                     </div>
-                    <div class="flex-grow">
-                        <h4 class="font-bold text-slate-800 mb-0.5">${escapeHtml(ev.title)}</h4>
-                        <p class="text-[11px] text-slate-500 mb-0.5">🕒 ${escapeHtml(ev.time)}</p>
-                        <p class="text-[11px] text-slate-600">📍 ${escapeHtml(ev.location)}</p>
-                    </div>
+                    ${isAdmin ? `<button onclick="deleteEventItem('${ev.id}')" class="text-red-500 hover:text-red-700 font-bold text-xs p-1" title="Termin löschen">🗑️</button>` : ''}
                 </div>
             `).join('');
+        }
+
+        window.deleteEventItem = async function(id) {
+            if(!isAdmin) return;
+            try {
+                if(db && !id.toString().startsWith('local_')) {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'events', id));
+                } else {
+                    eventItems = eventItems.filter(e => e.id !== id);
+                    renderEvents();
+                }
+            } catch(e) {
+                eventItems = eventItems.filter(e => e.id !== id);
+                renderEvents();
+            }
         }
 
         window.handleEventSubmit = async function(e) {
@@ -1206,7 +671,7 @@
                 document.getElementById('event-form').reset();
                 triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
             } catch (err) {
-                eventItems.push({ title, date: formattedDate, time, location, createdAt: Date.now() });
+                eventItems.push({ id: 'local_' + Math.random(), title, date: formattedDate, time, location, createdAt: Date.now() });
                 renderEvents();
                 closeModal('event-modal');
                 document.getElementById('event-form').reset();
@@ -1229,7 +694,8 @@
 
             try {
                 if (auth) {
-                    document.getElementById('sync-status').textContent = "Authentifiziere in der Cloud...";
+                    const syncEl = document.getElementById('sync-status');
+                    if(syncEl) syncEl.textContent = "Authentifiziere in der Cloud...";
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
@@ -1237,7 +703,8 @@
                     }
                 }
 
-                document.getElementById('sync-status').textContent = "Echtzeit-Verbindung zur Cloud aktiv.";
+                const syncEl = document.getElementById('sync-status');
+                if(syncEl) syncEl.textContent = "Echtzeit-Verbindung zur Cloud aktiv.";
                 
                 registerVisitor();
                 listenOnlineUsers();
@@ -1269,7 +736,8 @@
                     }, (err) => {});
                 }
             } catch (err) {
-                document.getElementById('sync-status').textContent = "Lokaler Modus aktiv.";
+                const syncEl = document.getElementById('sync-status');
+                if(syncEl) syncEl.textContent = "Echtzeit-Cloud & Lokal aktiv.";
                 renderChat();
                 renderMarketplace();
                 renderEvents();
