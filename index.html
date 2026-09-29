@@ -48,7 +48,13 @@
 
             <!-- Nickname & Admin Status -->
             <div class="flex items-center space-x-3">
-                <div id="nickname-display-container" class="flex items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                <!-- Firebase Status Indikator -->
+                <div id="firebase-status-badge" class="flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm" title="Firebase Verbindungsstatus">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mr-2" id="firebase-dot"></span>
+                    <span id="firebase-status-text">Verbinde mit Firebase...</span>
+                </div>
+
+                <div id="nickname-display-container" class="hidden sm:flex items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
                     <span class="text-xs text-slate-400 mr-2"><i class="fa-solid fa-user mr-1"></i>Nickname:</span>
                     <span id="current-nickname-text" class="text-xs font-bold text-slate-700 mr-2">Nicht festgelegt</span>
                     <button onclick="openNicknameModal()" class="text-emerald-600 hover:text-emerald-700 text-xs font-semibold underline">Ändern</button>
@@ -106,7 +112,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Benutzerdefinierte Firebase Konfiguration
+        // Ihr offizielles Firebase Konfigurationsobjekt
         const firebaseConfig = {
             apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
             authDomain: "dorfapp-2c48f.firebaseapp.com",
@@ -132,6 +138,29 @@
         window.userNickname = localStorage.getItem('dorf_nickname') || '';
         window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
 
+        // UI Status Helper für Firebase (zeigt Live-Status im Header an)
+        function updateFirebaseStatus(status, message) {
+            const badge = document.getElementById('firebase-status-badge');
+            const dot = document.getElementById('firebase-dot');
+            const text = document.getElementById('firebase-status-text');
+            if(!badge || !dot || !text) return;
+
+            badge.classList.remove('hidden');
+            if (status === 'connected') {
+                badge.className = "flex items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-800 transition-all shadow-sm";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2";
+                text.textContent = message || "Online & Verbunden";
+            } else if (status === 'error') {
+                badge.className = "flex items-center bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium text-red-800 transition-all shadow-sm";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2";
+                text.textContent = message || "Zugriffsfehler / Offline";
+            } else {
+                badge.className = "flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm";
+                dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mr-2";
+                text.textContent = message || "Verbinde...";
+            }
+        }
+
         // Toast Helper
         window.showToast = function(message, type = 'success') {
             const container = document.getElementById('toast-container');
@@ -156,6 +185,7 @@
         // Initialize Firebase
         async function initFirebase() {
             try {
+                updateFirebaseStatus('connecting', 'Initialisiere Firebase...');
                 app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
@@ -166,6 +196,8 @@
                     await signInAnonymously(auth);
                 }
                 currentUser = auth.currentUser;
+                
+                updateFirebaseStatus('connected', 'Firebase verbunden (Authentifiziert)');
 
                 // Besucherzähler erhöhen
                 await registerVisitor();
@@ -174,7 +206,7 @@
                 setupListeners();
             } catch (e) {
                 console.error("Firebase Init Fehler:", e);
-                // Keine Toast-Fehlermeldung mehr anzeigen, da App im Offline-Modus weiterläuft
+                updateFirebaseStatus('error', 'Verbindungsfehler oder Sicherheitsregeln');
             }
         }
 
@@ -192,6 +224,7 @@
                 renderApp();
             } catch(e) {
                 console.error("Besucherzähler Fehler:", e);
+                updateFirebaseStatus('error', 'Keine Schreibrechte in Firestore (Regeln prüfen)');
             }
         }
 
@@ -205,9 +238,11 @@
                         items.push({ id: d.id, ...d.data() });
                     });
                     window.appData[colName] = items;
+                    updateFirebaseStatus('connected', 'Live synchronisiert');
                     renderApp();
                 }, (error) => {
                     console.error(`Fehler bei ${colName}:`, error);
+                    updateFirebaseStatus('error', 'Zugriffsrechte verweigert (Firestore Rules)');
                 });
             });
 
@@ -218,6 +253,8 @@
                     window.appData.visitors = snap.data().count || 0;
                     renderApp();
                 }
+            }, (error) => {
+                console.error("Besucherzähler Listener Fehler:", error);
             });
         }
 
