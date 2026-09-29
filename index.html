@@ -6,16 +6,22 @@
     <title>DorfApp - Gemeinsam statt einsam</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel für JSX -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen">
-    <div id="root"></div>
+    <div id="root">
+        <div style="text-align:center; margin-top:20vh; font-family:sans-serif; color:#555;">
+            <h2>DorfApp lädt...</h2>
+            <p>Bitte einen Moment Geduld.</p>
+        </div>
+    </div>
 
     <!-- Firebase & App Logik -->
     <script type="text/babel">
-        // Firebase SDKs über ES-Module laden
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -32,8 +38,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Zufällige ID für den aktuellen Browser zur Anwesenheitserfassung
-        const userId = 'user_' + Math.random().toString(36.substring(2, 9));
+        const userId = 'user_' + Math.random().toString(36).substring(2, 9);
         const userName = 'Nachbar ' + Math.floor(Math.random() * 900 + 100);
 
         function App() {
@@ -42,7 +47,6 @@
             const [adminPassword, setAdminPassword] = React.useState('');
             const [onlineCount, setOnlineCount] = React.useState(1);
 
-            // Daten-States
             const [chatMessages, setChatMessages] = React.useState([]);
             const [chatText, setChatText] = React.useState('');
             
@@ -55,54 +59,50 @@
             const [bTitle, setBTitle] = React.useState('');
             const [bDesc, setBDesc] = React.useState('');
 
-            // Anwesenheit & Echtzeit-Daten laden
             React.useEffect(() => {
-                // Anwesenheit in Firestore registrieren (Heartbeat alle 30 Sek.)
-                const presenceRef = doc(db, 'presence', userId);
-                setDoc(presenceRef, { name: userName, lastSeen: serverTimestamp() }, { merge: true });
-                const interval = setInterval(() => {
-                    setDoc(presenceRef, { lastSeen: serverTimestamp() }, { merge: true });
-                }, 30000);
+                try {
+                    const presenceRef = doc(db, 'presence', userId);
+                    setDoc(presenceRef, { name: userName, lastSeen: serverTimestamp() }, { merge: true });
+                    const interval = setInterval(() => {
+                        setDoc(presenceRef, { lastSeen: serverTimestamp() }, { merge: true });
+                    }, 30000);
 
-                // Aktive Nutzer zählen
-                const unsubscribePresence = onSnapshot(collection(db, 'presence'), (snapshot) => {
-                    setOnlineCount(snapshot.size);
-                });
+                    const unsubscribePresence = onSnapshot(collection(db, 'presence'), (snapshot) => {
+                        setOnlineCount(snapshot.size);
+                    });
 
-                // Chat laden
-                const unsubscribeChat = onSnapshot(collection(db, 'chat'), (snapshot) => {
-                    const msgs = [];
-                    snapshot.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                    setChatMessages(msgs.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
-                });
+                    const unsubscribeChat = onSnapshot(collection(db, 'chat'), (snapshot) => {
+                        const msgs = [];
+                        snapshot.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+                        setChatMessages(msgs.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
+                    });
 
-                // Pinnwand laden
-                const unsubscribePin = onSnapshot(collection(db, 'pinnwand'), (snapshot) => {
-                    const items = [];
-                    snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
-                    setPinnwandItems(items);
-                });
+                    const unsubscribePin = onSnapshot(collection(db, 'pinnwand'), (snapshot) => {
+                        const items = [];
+                        snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
+                        setPinnwandItems(items);
+                    });
 
-                // Schwarzes Brett laden
-                const unsubscribeBrett = onSnapshot(collection(db, 'schwarzesBrett'), (snapshot) => {
-                    const items = [];
-                    snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
-                    setBrettItems(items);
-                });
+                    const unsubscribeBrett = onSnapshot(collection(db, 'schwarzesBrett'), (snapshot) => {
+                        const items = [];
+                        snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
+                        setBrettItems(items);
+                    });
 
-                return () => {
-                    clearInterval(interval);
-                    unsubscribePresence();
-                    unsubscribeChat();
-                    unsubscribePin();
-                    unsubscribeBrett();
-                };
+                    return () => {
+                        clearInterval(interval);
+                        unsubscribePresence();
+                        unsubscribeChat();
+                        unsubscribePin();
+                        unsubscribeBrett();
+                    };
+                } catch (e) {
+                    console.error("Firebase Init Fehler:", e);
+                }
             }, []);
 
-            // Admin Login prüfen
             const handleAdminLogin = (e) => {
                 e.preventDefault();
-                // Admin Passwort (hier anpassbar: "admin123")
                 if (adminPassword === 'admin123') {
                     setIsAdmin(true);
                     alert('Admin-Modus aktiviert!');
@@ -111,7 +111,6 @@
                 }
             };
 
-            // Beiträge löschen (Admin-Funktion)
             const handleDelete = async (collectionName, id) => {
                 if (!isAdmin) return;
                 if (confirm('Diesen Eintrag wirklich unwiderruflich löschen?')) {
@@ -123,7 +122,6 @@
                 }
             };
 
-            // Aktionen absenden
             const sendChat = async (e) => {
                 e.preventDefault();
                 if (!chatText.trim()) return;
@@ -167,7 +165,6 @@
 
             return (
                 <div className="max-w-3xl mx-auto pb-12">
-                    {/* Header */}
                     <header className="bg-emerald-700 text-white p-4 shadow-md flex justify-between items-center">
                         <div>
                             <h1 className="text-xl font-bold">🏡 DorfApp</h1>
@@ -180,7 +177,6 @@
                         </div>
                     </header>
 
-                    {/* Navigation / Reiter */}
                     <nav className="flex bg-white shadow overflow-x-auto border-b">
                         <button onClick={() => setActiveTab('chat')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'chat' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>💬 Live-Chat</button>
                         <button onClick={() => setActiveTab('pinnwand')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'pinnwand' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>📌 Pinnwand</button>
@@ -190,7 +186,6 @@
                     </nav>
 
                     <main className="p-4">
-                        {/* 1. CHAT REITER */}
                         {activeTab === 'chat' && (
                             <div className="bg-white rounded-xl shadow p-4 flex flex-col h-[70vh]">
                                 <h2 className="font-bold text-gray-700 mb-2 border-b pb-2">Live-Dorfchat</h2>
@@ -218,7 +213,6 @@
                             </div>
                         )}
 
-                        {/* 2. PINNWAND REITER */}
                         {activeTab === 'pinnwand' && (
                             <div className="space-y-6">
                                 <div className="bg-white rounded-xl shadow p-4">
@@ -230,7 +224,7 @@
                                                 <option value="Suche">Suche</option>
                                                 <option value="Verschenke">Verschenke</option>
                                             </select>
-                                            <input type="text" value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titel (z.B. Rasenmäher abzugeben)" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
+                                            <input type="text" value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titel (z.B. Rasenmäher)" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
                                         </div>
                                         <textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Beschreibung & Kontakt..." rows="2" className="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
                                         <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium w-full">Anzeige veröffentlichen</button>
@@ -261,7 +255,6 @@
                             </div>
                         )}
 
-                        {/* 3. SCHWARZES BRETT REITER */}
                         {activeTab === 'brett' && (
                             <div className="space-y-6">
                                 {isAdmin && (
@@ -295,11 +288,9 @@
                             </div>
                         )}
 
-                        {/* 4. KALENDER REITER */}
                         {activeTab === 'kalender' && (
                             <div className="bg-white rounded-xl shadow p-4">
                                 <h2 className="font-bold text-gray-700 mb-3">Dorf-Terminkalender</h2>
-                                <p className="text-xs text-gray-500 mb-4">Hier ist der Google Kalender integriert. (Sie können den Einbettungslink bei Bedarf im Code anpassen).</p>
                                 <div className="w-full h-[500px] border rounded-lg overflow-hidden">
                                     <iframe 
                                         src="https://calendar.google.com/calendar/embed?src=de.german%23holiday%40group.v.calendar.google.com&ctz=Europe%2FBerlin" 
@@ -313,23 +304,22 @@
                             </div>
                         )}
 
-                        {/* 5. ADMIN REITER */}
                         {activeTab === 'admin' && (
                             <div className="bg-white rounded-xl shadow p-6 max-w-md mx-auto">
                                 <h2 className="font-bold text-gray-800 text-lg mb-4">Admin-Bereich</h2>
                                 {!isAdmin ? (
                                     <form onSubmit={handleAdminLogin} className="space-y-4">
-                                        <p className="text-sm text-gray-600">Geben Sie das Admin-Passwort ein, um erweiterte Rechte (Löschrechte in allen Bereichen, offizielle Beiträge) zu erhalten.</p>
-                                        <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} placeholder="Passwort (Standard: admin123)" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        <p className="text-sm text-gray-600">Admin-Passwort eingeben (Standard: admin123)</p>
+                                        <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} placeholder="Passwort" className="w-full border rounded-lg px-3 py-2 text-sm" />
                                         <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium">Anmelden</button>
                                     </form>
                                 ) : (
                                     <div className="space-y-4">
                                         <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
-                                            <p className="text-emerald-800 font-semibold text-sm">✅ Sie sind als Admin angemeldet.</p>
+                                            <p className="text-emerald-800 font-semibold text-sm">✅ Admin aktiv</p>
                                             <p className="text-xs text-emerald-600 mt-1">Aktuell anwesende Nutzer: <b>{onlineCount}</b></p>
                                         </div>
-                                        <button onClick={() => setIsAdmin(false)} className="w-full bg-red-100 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-200">Admin-Modus beenden</button>
+                                        <button onClick={() => setIsAdmin(false)} className="w-full bg-red-100 text-red-700 py-2 rounded-lg text-sm font-medium">Admin-Modus beenden</button>
                                     </div>
                                 )}
                             </div>
@@ -339,7 +329,7 @@
             );
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     </script>
 </body>
 </html>
