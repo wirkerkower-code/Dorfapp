@@ -1,757 +1,345 @@
-```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DorfNetz - Die moderne Dorf-App für GitHub Pages</title>
-    
-    <!-- Tailwind CSS CDN -->
+    <title>DorfApp - Gemeinsam statt einsam</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM CDN -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel Standalone for JSX in browser -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    </style>
 </head>
-<body class="bg-amber-50/40 text-stone-800 antialiased">
-
+<body class="bg-gray-100 min-h-screen">
     <div id="root"></div>
 
-    <script type="module">
-        // Import Firebase modules via Skypack/CDN for pure static GitHub Pages support
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
-
-        window.FirebaseSDK = {
-            initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged,
-            getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, query, serverTimestamp
-        };
-    </script>
-
+    <!-- Firebase & App Logik -->
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        // Firebase SDKs über ES-Module laden
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Ihr Firebase Code
+        const firebaseConfig = {
+          apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
+          authDomain: "dorfapp-2c48f.firebaseapp.com",
+          projectId: "dorfapp-2c48f",
+          storageBucket: "dorfapp-2c48f.firebasestorage.app",
+          messagingSenderId: "447527926701",
+          appId: "1:447527926701:web:180ad7e2312bd96a4d7f24"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Zufällige ID für den aktuellen Browser zur Anwesenheitserfassung
+        const userId = 'user_' + Math.random().toString(36.substring(2, 9));
+        const userName = 'Nachbar ' + Math.floor(Math.random() * 900 + 100);
 
         function App() {
-            const [user, setUser] = useState(null);
-            const [userId, setUserId] = useState('');
-            const [userName, setUserName] = useState('');
-            const [activeTab, setActiveTab] = useState('chat');
+            const [activeTab, setActiveTab] = React.useState('chat');
+            const [isAdmin, setIsAdmin] = React.useState(false);
+            const [adminPassword, setAdminPassword] = React.useState('');
+            const [onlineCount, setOnlineCount] = React.useState(1);
+
+            // Daten-States
+            const [chatMessages, setChatMessages] = React.useState([]);
+            const [chatText, setChatText] = React.useState('');
             
-            // Admin state
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [adminPasswordInput, setAdminPasswordInput] = useState('');
-            const [showAdminModal, setShowAdminModal] = useState(false);
+            const [pinnwandItems, setPinnwandItems] = React.useState([]);
+            const [pTitle, setPTitle] = React.useState('');
+            const [pDesc, setPDesc] = React.useState('');
+            const [pCategory, setPCategory] = React.useState('Biete');
 
-            // Firestore data states
-            const [messages, setMessages] = useState([]);
-            const [presenceList, setPresenceList] = useState([]);
-            const [marketPosts, setMarketPosts] = useState([]);
-            const [officialPosts, setOfficialPosts] = useState([]);
-            const [events, setEvents] = useState([]);
-            const [visitorStats, setVisitorStats] = useState({ count: 0, activeNow: 0 });
+            const [brettItems, setBrettItems] = React.useState([]);
+            const [bTitle, setBTitle] = React.useState('');
+            const [bDesc, setBDesc] = React.useState('');
 
-            // Notifications & Pushup counters
-            const [notifications, setNotifications] = useState({ chat: 0, market: 0, calendar: 0, official: 0 });
-            const [pushEnabled, setPushEnabled] = useState(true);
-            const [toast, setToast] = useState(null);
+            // Anwesenheit & Echtzeit-Daten laden
+            React.useEffect(() => {
+                // Anwesenheit in Firestore registrieren (Heartbeat alle 30 Sek.)
+                const presenceRef = doc(db, 'presence', userId);
+                setDoc(presenceRef, { name: userName, lastSeen: serverTimestamp() }, { merge: true });
+                const interval = setInterval(() => {
+                    setDoc(presenceRef, { lastSeen: serverTimestamp() }, { merge: true });
+                }, 30000);
 
-            // Form inputs
-            const [chatInput, setChatInput] = useState('');
-            const [marketForm, setMarketForm] = useState({ title: '', category: 'Biete', description: '', price: '', contact: '' });
-            const [officialForm, setOfficialForm] = useState({ title: '', content: '', priority: 'Normal' });
-            const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', location: '', description: '' });
-            const [calendarUrl, setCalendarUrl] = useState('https://calendar.google.com/calendar/embed?src=en.german%23holiday%40group.v.calendar.google.com&ctz=Europe%2FBerlin');
-            const [customCalInput, setCustomCalInput] = useState('');
+                // Aktive Nutzer zählen
+                const unsubscribePresence = onSnapshot(collection(db, 'presence'), (snapshot) => {
+                    setOnlineCount(snapshot.size);
+                });
 
-            const chatEndRef = useRef(null);
-
-            useEffect(() => {
-                const initFirebase = async () => {
-                    if (!window.FirebaseSDK) return;
-                    const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FirebaseSDK;
-                    
-                    // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
-  authDomain: "dorfapp-2c48f.firebaseapp.com",
-  projectId: "dorfapp-2c48f",
-  storageBucket: "dorfapp-2c48f.firebasestorage.app",
-  messagingSenderId: "447527926701",
-  appId: "1:447527926701:web:180ad7e2312bd96a4d7f24"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-
-                    try {
-                        const app = initializeApp(firebaseConfig);
-                        window.dbInstance = getFirestore(app);
-                        window.authInstance = getAuth(app);
-                        window.appIdStr = 'dorf-net-github-production';
-
-                        await signInAnonymously(window.authInstance);
-
-                        onAuthStateChanged(window.authInstance, (currentUser) => {
-                            if (currentUser) {
-                                setUser(currentUser);
-                                setUserId(currentUser.uid);
-                                setUserName("Bürger " + currentUser.uid.substring(0, 4));
-                            }
-                        });
-                    } catch (e) {
-                        console.error("Firebase init notice:", e);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            useEffect(() => {
-                if (!userId || !window.dbInstance) return;
-                const { collection, doc, setDoc, onSnapshot, query, serverTimestamp } = window.FirebaseSDK;
-                const db = window.dbInstance;
-                const appId = window.appIdStr;
-
-                // Presence heartbeat
-                const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
-                const updatePresence = async () => {
-                    try {
-                        await setDoc(presenceRef, { userId, name: userName || 'Nachbar', lastSeen: serverTimestamp(), activeTab }, { merge: true });
-                    } catch (err) {}
-                };
-                updatePresence();
-                const pInterval = setInterval(updatePresence, 25000);
-
-                // Live Listeners
-                const unsubChat = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages')), (snap) => {
+                // Chat laden
+                const unsubscribeChat = onSnapshot(collection(db, 'chat'), (snapshot) => {
                     const msgs = [];
-                    snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                    msgs.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-                    if (msgs.length > messages.length && activeTab !== 'chat' && pushEnabled) {
-                        const latest = msgs[msgs.length - 1];
-                        if (latest.userId !== userId) {
-                            showToast(`Neue Chatnachricht von ${latest.userName}`);
-                            setNotifications(p => ({ ...p, chat: p.chat + 1 }));
-                        }
-                    }
-                    setMessages(msgs);
+                    snapshot.forEach(d => msgs.push({ id: d.id, ...d.data() }));
+                    setChatMessages(msgs.sort((a,b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0)));
                 });
 
-                const unsubPresence = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'presence')), (snap) => {
-                    const list = [];
-                    const now = Date.now();
-                    snap.forEach(d => {
-                        const data = d.data();
-                        if (now - (data.lastSeen?.toMillis?.() || now) < 90000) list.push(data);
-                    });
-                    setPresenceList(list);
-                    setVisitorStats({ count: snap.size + 210, activeNow: list.length });
+                // Pinnwand laden
+                const unsubscribePin = onSnapshot(collection(db, 'pinnwand'), (snapshot) => {
+                    const items = [];
+                    snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
+                    setPinnwandItems(items);
                 });
 
-                const unsubMarket = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'market_posts')), (snap) => {
-                    const posts = [];
-                    snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
-                    posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-                    if (posts.length > marketPosts.length && activeTab !== 'market' && pushEnabled) {
-                        showToast("Neues Pinnwand-Inserat online!");
-                        setNotifications(p => ({ ...p, market: p.market + 1 }));
-                    }
-                    setMarketPosts(posts);
-                });
-
-                const unsubOfficial = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'official_posts')), (snap) => {
-                    const posts = [];
-                    snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
-                    posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-                    if (posts.length > officialPosts.length && activeTab !== 'official' && pushEnabled) {
-                        showToast("Amtliche Bekanntmachung vom Bürgermeister!");
-                        setNotifications(p => ({ ...p, official: p.official + 1 }));
-                    }
-                    setOfficialPosts(posts);
-                });
-
-                const unsubEvents = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snap) => {
-                    const evs = [];
-                    snap.forEach(d => evs.push({ id: d.id, ...d.data() }));
-                    setEvents(evs);
+                // Schwarzes Brett laden
+                const unsubscribeBrett = onSnapshot(collection(db, 'schwarzesBrett'), (snapshot) => {
+                    const items = [];
+                    snapshot.forEach(d => items.push({ id: d.id, ...d.data() }));
+                    setBrettItems(items);
                 });
 
                 return () => {
-                    clearInterval(pInterval);
-                    unsubChat(); unsubPresence(); unsubMarket(); unsubOfficial(); unsubEvents();
+                    clearInterval(interval);
+                    unsubscribePresence();
+                    unsubscribeChat();
+                    unsubscribePin();
+                    unsubscribeBrett();
                 };
-            }, [userId, userName, activeTab, pushEnabled]);
+            }, []);
 
-            // Auto scroll chat
-            useEffect(() => {
-                if (activeTab === 'chat') chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [messages, activeTab]);
-
-            const showToast = (txt) => {
-                setToast(txt);
-                setTimeout(() => setToast(null), 4000);
-            };
-
-            const switchTab = (tab) => {
-                setActiveTab(tab);
-                setNotifications(p => ({ ...p, [tab]: 0 }));
-            };
-
-            // Handlers for submissions
-            const sendChat = async (e) => {
-                e.preventDefault();
-                if (!chatInput.trim() || !window.dbInstance) return;
-                const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'chat_messages'), {
-                    userId, userName: userName || 'Nachbar', text: chatInput.trim(), createdAt: serverTimestamp()
-                });
-                setChatInput('');
-            };
-
-            const createMarket = async (e) => {
-                e.preventDefault();
-                if (!marketForm.title || !window.dbInstance) return;
-                const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'market_posts'), {
-                    userId, userName, ...marketForm, createdAt: serverTimestamp()
-                });
-                setMarketForm({ title: '', category: 'Biete', description: '', price: '', contact: '' });
-                showToast('Erfolgreich auf der Pinnwand eingestellt!');
-            };
-
-            const createOfficial = async (e) => {
-                e.preventDefault();
-                if (!isAdmin) { showToast('Nur der Administrator darf amtliche Bekanntmachungen verfassen.'); return; }
-                const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'official_posts'), {
-                    userId, userName: userName + ' (Bürgermeister)', ...officialForm, createdAt: serverTimestamp()
-                });
-                setOfficialForm({ title: '', content: '', priority: 'Normal' });
-                showToast('Amtliche Mitteilung im Schwarzen Brett veröffentlicht.');
-            };
-
-            const createEvent = async (e) => {
-                e.preventDefault();
-                if (!eventForm.title || !window.dbInstance) return;
-                const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'events'), {
-                    userId, userName, ...eventForm, createdAt: serverTimestamp()
-                });
-                setEventForm({ title: '', date: '', time: '', location: '', description: '' });
-                showToast('Termin im Kalender eingetragen!');
-            };
-
-            const deleteDocItem = async (colName, id, ownerId) => {
-                if (!isAdmin && userId !== ownerId) {
-                    showToast('Keine Berechtigung zum Löschen dieses Eintrags.');
-                    return;
-                }
-                if (!window.confirm("Diesen Eintrag wirklich löschen?")) return;
-                const { deleteDoc, doc } = window.FirebaseSDK;
-                await deleteDoc(doc(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', colName, id));
-                showToast('Eintrag erfolgreich gelöscht.');
-            };
-
+            // Admin Login prüfen
             const handleAdminLogin = (e) => {
                 e.preventDefault();
-                if (adminPasswordInput === 'dorfadmin' || adminPasswordInput === 'admin123') {
+                // Admin Passwort (hier anpassbar: "admin123")
+                if (adminPassword === 'admin123') {
                     setIsAdmin(true);
-                    setShowAdminModal(false);
-                    setAdminPasswordInput('');
-                    showToast('Administrator-Modus erfolgreich aktiviert!');
+                    alert('Admin-Modus aktiviert!');
                 } else {
-                    showToast('Falsches Admin-Passwort! (Tipp: dorfadmin)');
+                    alert('Falsches Passwort!');
                 }
+            };
+
+            // Beiträge löschen (Admin-Funktion)
+            const handleDelete = async (collectionName, id) => {
+                if (!isAdmin) return;
+                if (confirm('Diesen Eintrag wirklich unwiderruflich löschen?')) {
+                    try {
+                        await deleteDoc(doc(db, collectionName, id));
+                    } catch (err) {
+                        alert('Fehler beim Löschen: ' + err.message);
+                    }
+                }
+            };
+
+            // Aktionen absenden
+            const sendChat = async (e) => {
+                e.preventDefault();
+                if (!chatText.trim()) return;
+                await addDoc(collection(db, 'chat'), {
+                    text: chatText,
+                    sender: userName,
+                    createdAt: serverTimestamp()
+                });
+                setChatText('');
+            };
+
+            const addPinnwand = async (e) => {
+                e.preventDefault();
+                if (!pTitle.trim() || !pDesc.trim()) return;
+                await addDoc(collection(db, 'pinnwand'), {
+                    title: pTitle,
+                    description: pDesc,
+                    category: pCategory,
+                    sender: userName,
+                    createdAt: serverTimestamp()
+                });
+                setPTitle('');
+                setPDesc('');
+            };
+
+            const addBrett = async (e) => {
+                e.preventDefault();
+                if (!isAdmin) {
+                    alert('Nur der Admin darf offizielle Beiträge am Schwarzen Brett erstellen.');
+                    return;
+                }
+                if (!bTitle.trim() || !bDesc.trim()) return;
+                await addDoc(collection(db, 'schwarzesBrett'), {
+                    title: bTitle,
+                    description: bDesc,
+                    createdAt: serverTimestamp()
+                });
+                setBTitle('');
+                setBDesc('');
             };
 
             return (
-                <div className="min-h-screen flex flex-col">
-                    
-                    {/* Toast Notification Popup */}
-                    {toast && (
-                        <div className="fixed top-5 right-5 z-50 bg-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border border-emerald-600 animate-bounce">
-                            <span className="text-xl">🔔</span>
-                            <span className="font-semibold text-sm">{toast}</span>
+                <div className="max-w-3xl mx-auto pb-12">
+                    {/* Header */}
+                    <header className="bg-emerald-700 text-white p-4 shadow-md flex justify-between items-center">
+                        <div>
+                            <h1 className="text-xl font-bold">🏡 DorfApp</h1>
+                            <p className="text-xs text-emerald-200">Gemeinsam statt einsam</p>
                         </div>
-                    )}
-
-                    {/* App Header */}
-                    <header className="bg-emerald-900 text-amber-50 shadow-lg border-b-4 border-amber-600">
-                        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-amber-600 p-3 rounded-2xl text-2xl shadow">🏡</div>
-                                <div>
-                                    <h1 className="text-2xl font-black tracking-tight">DorfNetz</h1>
-                                    <p className="text-xs text-amber-200">GitHub Pages Ready • Cloud-Gemeindeportal</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 flex-wrap justify-center">
-                                <div className="bg-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-700 flex items-center space-x-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    <input 
-                                        type="text" 
-                                        value={userName} 
-                                        onChange={(e) => setUserName(e.target.value)} 
-                                        className="bg-transparent text-amber-100 text-sm font-semibold focus:outline-none w-36 border-b border-emerald-600"
-                                        placeholder="Name..."
-                                    />
-                                </div>
-
-                                {isAdmin ? (
-                                    <span className="bg-amber-500 text-amber-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
-                                        🛡️ Admin aktiv
-                                        <button onClick={() => setIsAdmin(false)} className="ml-2 text-red-900 font-extrabold underline">[Ausloggen]</button>
-                                    </span>
-                                ) : (
-                                    <button 
-                                        onClick={() => setShowAdminModal(true)}
-                                        className="bg-emerald-800 hover:bg-emerald-700 text-amber-200 text-xs px-3 py-2 rounded-xl font-medium transition border border-emerald-600"
-                                    >
-                                        🔐 Admin Login
-                                    </button>
-                                )}
-                            </div>
+                        <div className="text-right text-xs bg-emerald-800 p-2 rounded-lg">
+                            <span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1 animate-pulse"></span>
+                            Anwesend: <b>{onlineCount}</b> Nutzer
+                            {isAdmin && <span className="block text-yellow-300 font-bold mt-0.5">Admin aktiv</span>}
                         </div>
                     </header>
 
-                    {/* Navigation Tabs with Badges */}
-                    <nav className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-40">
-                        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
-                            <div className="flex space-x-1 py-2">
-                                {[
-                                    { id: 'chat', label: 'Live-Chat', icon: '💬', badge: notifications.chat },
-                                    { id: 'market', label: 'Pinnwand', icon: '📌', badge: notifications.market },
-                                    { id: 'calendar', label: 'Terminkalender', icon: '📅', badge: notifications.calendar },
-                                    { id: 'official', label: 'Schwarzes Brett', icon: '🏛️', badge: notifications.official },
-                                    { id: 'admin', label: 'Dorfverwaltung', icon: '⚙️', badge: 0 }
-                                ].map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => switchTab(t.id)}
-                                        className={`relative px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center space-x-2 whitespace-nowrap ${
-                                            activeTab === t.id ? 'bg-emerald-800 text-white shadow-md' : 'text-stone-600 hover:bg-amber-100'
-                                        }`}
-                                    >
-                                        <span>{t.icon}</span>
-                                        <span>{t.label}</span>
-                                        {t.badge > 0 && (
-                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse">
-                                                {t.badge}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="hidden md:flex items-center space-x-2 text-xs text-stone-500">
-                                <label className="flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={pushEnabled} onChange={(e) => setPushEnabled(e.target.checked)} className="mr-1.5" />
-                                    <span>🔔 Push-Hinweise</span>
-                                </label>
-                            </div>
-                        </div>
+                    {/* Navigation / Reiter */}
+                    <nav className="flex bg-white shadow overflow-x-auto border-b">
+                        <button onClick={() => setActiveTab('chat')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'chat' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>💬 Live-Chat</button>
+                        <button onClick={() => setActiveTab('pinnwand')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'pinnwand' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>📌 Pinnwand</button>
+                        <button onClick={() => setActiveTab('brett')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'brett' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>🏛️ Schwarzes Brett</button>
+                        <button onClick={() => setActiveTab('kalender')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'kalender' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>📅 Termine</button>
+                        <button onClick={() => setActiveTab('admin')} className={`flex-1 py-3 px-4 text-center font-medium text-sm whitespace-nowrap ${activeTab === 'admin' ? 'border-b-2 border-emerald-600 text-emerald-600 bg-emerald-50' : 'text-gray-600'}`}>⚙️ Admin</button>
                     </nav>
 
-                    {/* Main Content Area */}
-                    <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
-
-                        {/* 1. LIVE CHAT */}
+                    <main className="p-4">
+                        {/* 1. CHAT REITER */}
                         {activeTab === 'chat' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[620px]">
-                                    <div className="bg-emerald-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
-                                        <div>
-                                            <h2 className="font-bold text-lg">Dorf-Live-Chat</h2>
-                                            <p className="text-xs text-amber-200">Echtzeit-Austausch für Nachbarn</p>
-                                        </div>
-                                        <span className="text-xs bg-emerald-800 px-3 py-1 rounded-full">{presenceList.length} Anwesend</span>
-                                    </div>
-
-                                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-stone-50/50">
-                                        {messages.length === 0 ? (
-                                            <div className="text-center py-20 text-stone-400">
-                                                <p className="text-4xl mb-2">🍃</p>
-                                                <p>Noch keine Nachrichten. Schreiben Sie den ersten Gruß!</p>
-                                            </div>
-                                        ) : (
-                                            messages.map(msg => {
-                                                const isOwn = msg.userId === userId;
-                                                return (
-                                                    <div key={msg.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-                                                        <div className="flex items-center space-x-2 mb-1">
-                                                            <span className="text-xs font-bold text-stone-600">{msg.userName}</span>
-                                                        </div>
-                                                        <div className={`max-w-md px-4 py-3 rounded-2xl text-sm relative group shadow-sm ${
-                                                            isOwn ? 'bg-emerald-700 text-white rounded-tr-none' : 'bg-white text-stone-800 border border-stone-200 rounded-tl-none'
-                                                        }`}>
-                                                            <p className="break-words">{msg.text}</p>
-                                                            {(isAdmin || isOwn) && (
-                                                                <button 
-                                                                    onClick={() => deleteDocItem('chat_messages', msg.id, msg.userId)}
-                                                                    className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        )}
-                                        <div ref={chatEndRef} />
-                                    </div>
-
-                                    <form onSubmit={sendChat} className="p-4 bg-white border-t border-stone-200 flex gap-3 rounded-b-2xl">
-                                        <input 
-                                            type="text" 
-                                            value={chatInput} 
-                                            onChange={(e) => setChatInput(e.target.value)} 
-                                            placeholder="Nachricht eingeben..." 
-                                            className="flex-1 px-4 py-3 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                                        />
-                                        <button type="submit" className="bg-emerald-800 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold text-sm">
-                                            Senden ➔
-                                        </button>
-                                    </form>
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 flex flex-col h-[620px]">
-                                    <h3 className="font-bold text-stone-900 border-b border-stone-200 pb-3 mb-3 flex justify-between">
-                                        <span>🟢 Wer ist anwesend?</span>
-                                        <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">{presenceList.length}</span>
-                                    </h3>
-                                    <div className="flex-1 overflow-y-auto space-y-3">
-                                        {presenceList.map((p, i) => (
-                                            <div key={i} className="flex items-center space-x-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                                                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
-                                                    {p.name?.[0] || 'D'}
+                            <div className="bg-white rounded-xl shadow p-4 flex flex-col h-[70vh]">
+                                <h2 className="font-bold text-gray-700 mb-2 border-b pb-2">Live-Dorfchat</h2>
+                                <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
+                                    {chatMessages.length === 0 ? (
+                                        <p className="text-gray-400 text-center mt-20">Noch keine Nachrichten im Chat. Schreib als Erster!</p>
+                                    ) : (
+                                        chatMessages.map(m => (
+                                            <div key={m.id} className="bg-gray-50 p-3 rounded-lg border relative group">
+                                                <div className="flex justify-between items-center text-xs text-gray-500 mb-1">
+                                                    <span className="font-semibold text-emerald-700">{m.sender || 'Nachbar'}</span>
+                                                    {isAdmin && (
+                                                        <button onClick={() => handleDelete('chat', m.id)} className="text-red-500 hover:text-red-700 font-bold">Löschen</button>
+                                                    )}
                                                 </div>
-                                                <div className="overflow-hidden">
-                                                    <p className="text-sm font-semibold text-stone-800 truncate">{p.name}</p>
-                                                    <p className="text-[10px] text-stone-400 capitalize">Bereich: {p.activeTab || 'chat'}</p>
-                                                </div>
+                                                <p className="text-gray-800 text-sm">{m.text}</p>
                                             </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-4 pt-3 border-t border-stone-200 text-xs text-stone-500 text-center">
-                                        Gesamt-Besucher: <strong className="text-stone-800">{visitorStats.count}</strong>
-                                    </div>
+                                        ))
+                                    )}
                                 </div>
+                                <form onSubmit={sendChat} className="flex gap-2">
+                                    <input type="text" value={chatText} onChange={e => setChatText(e.target.value)} placeholder="Nachricht an das Dorf..." className="flex-1 border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-600" />
+                                    <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Senden</button>
+                                </form>
                             </div>
                         )}
 
-                        {/* 2. MARKETPLACE PINNWAND */}
-                        {activeTab === 'market' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
-                                    <h3 className="font-bold text-lg text-emerald-900 mb-2">📌 Neues Inserat aufgeben</h3>
-                                    <p className="text-xs text-stone-500 mb-4">Biete Werkzeug, suche Hilfe oder verschenke Gegenstände.</p>
-                                    
-                                    <form onSubmit={createMarket} className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Kategorie</label>
-                                            <select 
-                                                value={marketForm.category} 
-                                                onChange={(e) => setMarketForm({...marketForm, category: e.target.value})}
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white"
-                                            >
-                                                <option value="Biete">🟢 Biete</option>
-                                                <option value="Suche">🔵 Suche</option>
-                                                <option value="Verschenke">🎁 Verschenke</option>
+                        {/* 2. PINNWAND REITER */}
+                        {activeTab === 'pinnwand' && (
+                            <div className="space-y-6">
+                                <div className="bg-white rounded-xl shadow p-4">
+                                    <h2 className="font-bold text-gray-700 mb-3">Neuen Eintrag erstellen (Biete / Suche / Verschenke)</h2>
+                                    <form onSubmit={addPinnwand} className="space-y-3">
+                                        <div className="flex gap-2">
+                                            <select value={pCategory} onChange={e => setPCategory(e.target.value)} className="border rounded-lg px-3 py-2 text-sm bg-white">
+                                                <option value="Biete">Biete</option>
+                                                <option value="Suche">Suche</option>
+                                                <option value="Verschenke">Verschenke</option>
                                             </select>
+                                            <input type="text" value={pTitle} onChange={e => setPTitle(e.target.value)} placeholder="Titel (z.B. Rasenmäher abzugeben)" className="flex-1 border rounded-lg px-3 py-2 text-sm" />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Titel</label>
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.title} 
-                                                onChange={(e) => setMarketForm({...marketForm, title: e.target.value})}
-                                                placeholder="z.B. Leiter auszuleihen" 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Beschreibung</label>
-                                            <textarea 
-                                                value={marketForm.description} 
-                                                onChange={(e) => setMarketForm({...marketForm, description: e.target.value})}
-                                                placeholder="Details..." 
-                                                rows="3"
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.price} 
-                                                onChange={(e) => setMarketForm({...marketForm, price: e.target.value})}
-                                                placeholder="Preis / Gratis" 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                            />
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.contact} 
-                                                onChange={(e) => setMarketForm({...marketForm, contact: e.target.value})}
-                                                placeholder="Kontakt / Hausnr." 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                            />
-                                        </div>
-                                        <button type="submit" className="w-full bg-emerald-800 text-white font-semibold py-3 rounded-xl text-sm shadow">
-                                            Auf Pinnwand veröffentlichen
-                                        </button>
+                                        <textarea value={pDesc} onChange={e => setPDesc(e.target.value)} placeholder="Beschreibung & Kontakt..." rows="2" className="w-full border rounded-lg px-3 py-2 text-sm"></textarea>
+                                        <button type="submit" className="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium w-full">Anzeige veröffentlichen</button>
                                     </form>
                                 </div>
 
-                                <div className="lg:col-span-2 space-y-4">
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 flex justify-between items-center">
-                                        <h3 className="font-bold text-stone-900">Aktuelle Pinnwand-Anzeigen</h3>
-                                        <span className="text-xs bg-stone-100 px-3 py-1 rounded-full text-stone-600 font-medium">{marketPosts.length} Inserate</span>
-                                    </div>
-
-                                    {marketPosts.length === 0 ? (
-                                        <div className="bg-white rounded-2xl p-12 text-center border border-stone-200 text-stone-400">
-                                            <p className="text-3xl mb-2">📋</p>
-                                            <p>Keine Einträge auf der Pinnwand.</p>
-                                        </div>
+                                <div className="grid gap-3">
+                                    {pinnwandItems.length === 0 ? (
+                                        <p className="text-gray-400 text-center py-10">Keine Pinnwand-Einträge vorhanden.</p>
                                     ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {marketPosts.map(p => (
-                                                <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-stone-200 flex flex-col justify-between relative group">
+                                        pinnwandItems.map(item => (
+                                            <div key={item.id} className="bg-white rounded-xl shadow p-4 border-l-4 border-emerald-500 relative">
+                                                <div className="flex justify-between items-start">
                                                     <div>
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800">
-                                                                {p.category}
-                                                            </span>
-                                                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-                                                                {p.price || 'Gratis'}
-                                                            </span>
-                                                        </div>
-                                                        <h4 className="font-bold text-stone-900 text-base mb-1">{p.title}</h4>
-                                                        <p className="text-sm text-stone-600 mb-4 whitespace-pre-wrap">{p.description}</p>
+                                                        <span className={`text-xs px-2 py-0.5 rounded font-bold ${item.category === 'Verschenke' ? 'bg-purple-100 text-purple-700' : item.category === 'Biete' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>{item.category}</span>
+                                                        <h3 className="font-bold text-gray-800 mt-1">{item.title}</h3>
                                                     </div>
-                                                    <div className="pt-3 border-t border-stone-100 flex justify-between items-center text-xs text-stone-500">
-                                                        <div>
-                                                            <p className="font-semibold text-stone-700">{p.userName}</p>
-                                                            <p>Kontakt: {p.contact || 'Im Profil'}</p>
-                                                        </div>
-                                                        {(isAdmin || p.userId === userId) && (
-                                                            <button onClick={() => deleteDocItem('market_posts', p.id, p.userId)} className="text-red-600 font-semibold px-2 py-1 bg-red-50 rounded">
-                                                                Löschen
-                                                            </button>
-                                                        )}
-                                                    </div>
+                                                    {isAdmin && (
+                                                        <button onClick={() => handleDelete('pinnwand', item.id)} className="text-red-500 text-xs font-bold border border-red-200 px-2 py-1 rounded">Löschen</button>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
+                                                <p className="text-gray-600 text-sm mt-2">{item.description}</p>
+                                                <p className="text-xs text-gray-400 mt-3">Eingestellt von: {item.sender || 'Nachbar'}</p>
+                                            </div>
+                                        ))
                                     )}
                                 </div>
                             </div>
                         )}
 
-                        {/* 3. CALENDAR TAB */}
-                        {activeTab === 'calendar' && (
+                        {/* 3. SCHWARZES BRETT REITER */}
+                        {activeTab === 'brett' && (
                             <div className="space-y-6">
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-emerald-900">📅 Offizieller Google-Kalender</h3>
-                                            <p className="text-xs text-stone-500">Gemeinde-Fahrplan für Müllabfuhr, Feste und Veranstaltungen.</p>
-                                        </div>
-                                        {isAdmin && (
-                                            <div className="flex gap-2 w-full sm:w-auto">
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Google Calendar Embed URL..." 
-                                                    value={customCalInput} 
-                                                    onChange={(e) => setCustomCalInput(e.target.value)} 
-                                                    className="px-3 py-1.5 border border-stone-300 rounded-xl text-xs w-64"
-                                                />
-                                                <button onClick={() => { if(customCalInput) setCalendarUrl(customCalInput); showToast('Kalender aktualisiert!'); }} className="bg-emerald-800 text-white text-xs px-3 py-1.5 rounded-xl">
-                                                    Einbinden
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="w-full h-[420px] rounded-xl overflow-hidden border border-stone-200">
-                                        <iframe src={calendarUrl} className="w-full h-full border-0" frameBorder="0"></iframe>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
-                                        <h3 className="font-bold text-base text-emerald-900 mb-2">Dorf-Termin eintragen</h3>
-                                        <form onSubmit={createEvent} className="space-y-3">
-                                            <input type="text" placeholder="Titel (z.B. Feuerwehrfest)" value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" required />
-                                            <input type="date" value={eventForm.date} onChange={e=>setEventForm({...eventForm, date: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" required />
-                                            <input type="text" placeholder="Uhrzeit (z.B. 18:00 Uhr)" value={eventForm.time} onChange={e=>setEventForm({...eventForm, time: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" />
-                                            <input type="text" placeholder="Ort (z.B. Bürgerhaus)" value={eventForm.location} onChange={e=>setEventForm({...eventForm, location: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" />
-                                            <button type="submit" className="w-full bg-emerald-800 text-white font-semibold py-2.5 rounded-xl text-sm">Termin hinzufügen</button>
+                                {isAdmin && (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                        <h2 className="font-bold text-amber-800 mb-2">Offizielle Bekanntmachung erstellen (Admin)</h2>
+                                        <form onSubmit={addBrett} className="space-y-3">
+                                            <input type="text" value={bTitle} onChange={e => setBTitle(e.target.value)} placeholder="Titel der Bekanntmachung" className="w-full border rounded-lg px-3 py-2 text-sm bg-white" />
+                                            <textarea value={bDesc} onChange={e => setBDesc(e.target.value)} placeholder="Offizieller Text..." rows="3" className="w-full border rounded-lg px-3 py-2 text-sm bg-white"></textarea>
+                                            <button type="submit" className="bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium w-full">Offiziell veröffentlichen</button>
                                         </form>
                                     </div>
+                                )}
 
-                                    <div className="lg:col-span-2 space-y-3">
-                                        <h3 className="font-bold text-stone-900 bg-white p-4 rounded-2xl border border-stone-200">Anstehende lokale Termine</h3>
-                                        {events.map(ev => (
-                                            <div key={ev.id} className="bg-white p-4 rounded-2xl border border-stone-200 flex justify-between items-center">
-                                                <div>
-                                                    <h4 className="font-bold text-stone-900">{ev.title}</h4>
-                                                    <p className="text-xs text-stone-500">📅 {ev.date} • 🕒 {ev.time} • 📍 {ev.location}</p>
+                                <div className="grid gap-3">
+                                    {brettItems.length === 0 ? (
+                                        <p className="text-gray-400 text-center py-10">Keine offiziellen Bekanntmachungen vorhanden.</p>
+                                    ) : (
+                                        brettItems.map(item => (
+                                            <div key={item.id} className="bg-white rounded-xl shadow p-4 border-l-4 border-red-600 relative">
+                                                <div className="flex justify-between items-start">
+                                                    <h3 className="font-bold text-gray-900 text-lg">🏛️ {item.title}</h3>
+                                                    {isAdmin && (
+                                                        <button onClick={() => handleDelete('schwarzesBrett', item.id)} className="text-red-500 text-xs font-bold border border-red-200 px-2 py-1 rounded">Löschen</button>
+                                                    )}
                                                 </div>
-                                                {(isAdmin || ev.userId === userId) && (
-                                                    <button onClick={() => deleteDocItem('events', ev.id, ev.userId)} className="text-red-600 text-xs font-semibold px-3 py-1 bg-red-50 rounded">Löschen</button>
-                                                )}
+                                                <p className="text-gray-700 text-sm mt-2 whitespace-pre-wrap">{item.description}</p>
                                             </div>
-                                        ))}
-                                    </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
 
-                        {/* 4. OFFICIAL BULLETIN BOARD */}
-                        {activeTab === 'official' && (
-                            <div className="space-y-6">
-                                {isAdmin ? (
-                                    <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-500 p-6">
-                                        <h3 className="font-bold text-lg text-amber-900 mb-2">🏛️ Amtliche Bekanntmachung erstellen</h3>
-                                        <form onSubmit={createOfficial} className="space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <input type="text" placeholder="Titel..." value={officialForm.title} onChange={e=>setOfficialForm({...officialForm, title: e.target.value})} className="md:col-span-2 px-3 py-2.5 border border-stone-300 rounded-xl text-sm" required />
-                                                <select value={officialForm.priority} onChange={e=>setOfficialForm({...officialForm, priority: e.target.value})} className="px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white">
-                                                    <option value="Normal">Normal</option>
-                                                    <option value="Wichtig">Wichtig</option>
-                                                    <option value="Dringend">Dringend</option>
-                                                </select>
-                                            </div>
-                                            <textarea placeholder="Inhalt der Bekanntmachung..." rows="3" value={officialForm.content} onChange={e=>setOfficialForm({...officialForm, content: e.target.value})} className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm" required />
-                                            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-amber-950 font-bold px-6 py-3 rounded-xl text-sm">
-                                                Offiziell veröffentlichen
-                                            </button>
-                                        </form>
-                                    </div>
-                                ) : (
-                                    <div className="bg-amber-100/60 border border-amber-300 p-4 rounded-2xl flex justify-between items-center">
-                                        <p className="text-xs text-amber-900 font-medium">Das offizielle Schwarze Brett wird exklusiv von der Dorfverwaltung gepflegt.</p>
-                                        <button onClick={() => setShowAdminModal(true)} className="bg-amber-600 text-white text-xs px-4 py-2 rounded-xl font-bold">Admin-Login</button>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    {officialPosts.map(post => (
-                                        <div key={post.id} className="p-6 rounded-2xl shadow-sm border-2 border-stone-200 bg-white relative">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500 text-white">{post.priority}</span>
-                                                {isAdmin && (
-                                                    <button onClick={() => deleteDocItem('official_posts', post.id, post.userId)} className="text-red-600 text-xs font-bold px-2 py-1 bg-red-50 rounded">Löschen</button>
-                                                )}
-                                            </div>
-                                            <h4 className="font-bold text-stone-900 text-lg mb-1">{post.title}</h4>
-                                            <p className="text-sm text-stone-700 whitespace-pre-wrap">{post.content}</p>
-                                        </div>
-                                    ))}
+                        {/* 4. KALENDER REITER */}
+                        {activeTab === 'kalender' && (
+                            <div className="bg-white rounded-xl shadow p-4">
+                                <h2 className="font-bold text-gray-700 mb-3">Dorf-Terminkalender</h2>
+                                <p className="text-xs text-gray-500 mb-4">Hier ist der Google Kalender integriert. (Sie können den Einbettungslink bei Bedarf im Code anpassen).</p>
+                                <div className="w-full h-[500px] border rounded-lg overflow-hidden">
+                                    <iframe 
+                                        src="https://calendar.google.com/calendar/embed?src=de.german%23holiday%40group.v.calendar.google.com&ctz=Europe%2FBerlin" 
+                                        style={{border: 0}} 
+                                        width="100%" 
+                                        height="100%" 
+                                        frameBorder="0" 
+                                        scrolling="no">
+                                    </iframe>
                                 </div>
                             </div>
                         )}
 
-                        {/* 5. ADMIN PANEL & GITHUB GUIDE */}
+                        {/* 5. ADMIN REITER */}
                         {activeTab === 'admin' && (
-                            <div className="space-y-6">
-                                {isAdmin ? (
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Aktive Benutzer</p>
-                                                <h4 className="text-2xl font-black text-stone-900">{visitorStats.activeNow}</h4>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Gesamt-Besucher</p>
-                                                <h4 className="text-2xl font-black text-stone-900">{visitorStats.count}</h4>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Admin-Status</p>
-                                                <h4 className="text-lg font-black text-emerald-700">Vollzugriff</h4>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                                            <h3 className="font-bold text-lg text-emerald-900 mb-2">🚀 Anleitung: So hosten Sie diese App auf GitHub Pages</h3>
-                                            <ol className="list-decimal list-inside text-sm text-stone-700 space-y-2 leading-relaxed">
-                                                <li>Erstellen Sie ein neues Repository auf GitHub (z.B. <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">dorfnetz</code>).</li>
-                                                <li>Speichern Sie diesen vollständigen Code als Datei namens <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">index.html</code> im Hauptverzeichnis des Repositories.</li>
-                                                <li>Gehen Sie in Ihrem GitHub Repository zu <strong>Settings → Pages</strong>.</li>
-                                                <li>Wählen Sie unter <em>Build and deployment</em> als Source <strong>Deploy from a branch</strong> und als Branch <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">main</code> (bzw. <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">master</code>) sowie <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">/ (root)</code>.</li>
-                                                <li>Nach wenigen Sekunden ist Ihre Dorf-App unter <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">https://ihr-username.github.io/dorfnetz/</code> weltweit live abrufbar!</li>
-                                            </ol>
-                                        </div>
-                                    </div>
+                            <div className="bg-white rounded-xl shadow p-6 max-w-md mx-auto">
+                                <h2 className="font-bold text-gray-800 text-lg mb-4">Admin-Bereich</h2>
+                                {!isAdmin ? (
+                                    <form onSubmit={handleAdminLogin} className="space-y-4">
+                                        <p className="text-sm text-gray-600">Geben Sie das Admin-Passwort ein, um erweiterte Rechte (Löschrechte in allen Bereichen, offizielle Beiträge) zu erhalten.</p>
+                                        <input type="password" value={adminPassword} onChange={e => setAdminPassword(e.target.value)} placeholder="Passwort (Standard: admin123)" className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                        <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg text-sm font-medium">Anmelden</button>
+                                    </form>
                                 ) : (
-                                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12 text-center max-w-md mx-auto">
-                                        <div className="text-4xl mb-3">🔐</div>
-                                        <h3 className="font-bold text-xl text-stone-900 mb-2">Administrator-Bereich</h3>
-                                        <p className="text-xs text-stone-500 mb-6">Bitte anmelden, um den Besucherzähler, die GitHub-Anleitung und Moderationstools zu öffnen.</p>
-                                        <button onClick={() => setShowAdminModal(true)} className="bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl text-sm shadow w-full">
-                                            Als Admin einloggen
-                                        </button>
+                                    <div className="space-y-4">
+                                        <div className="bg-emerald-50 border border-emerald-200 p-4 rounded-lg">
+                                            <p className="text-emerald-800 font-semibold text-sm">✅ Sie sind als Admin angemeldet.</p>
+                                            <p className="text-xs text-emerald-600 mt-1">Aktuell anwesende Nutzer: <b>{onlineCount}</b></p>
+                                        </div>
+                                        <button onClick={() => setIsAdmin(false)} className="w-full bg-red-100 text-red-700 py-2 rounded-lg text-sm font-medium hover:bg-red-200">Admin-Modus beenden</button>
                                     </div>
                                 )}
                             </div>
                         )}
-
                     </main>
-
-                    {/* Admin Login Modal */}
-                    {showAdminModal && (
-                        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200">
-                                <h3 className="text-xl font-black text-stone-900 mb-2">Administrator-Anmeldung</h3>
-                                <p className="text-xs text-stone-500 mb-4">Passwort eingeben (Demo-Standard: <code className="bg-stone-100 px-1 font-mono">dorfadmin</code>)</p>
-                                <form onSubmit={handleAdminLogin} className="space-y-4">
-                                    <input 
-                                        type="password" 
-                                        value={adminPasswordInput} 
-                                        onChange={(e) => setAdminPasswordInput(e.target.value)} 
-                                        placeholder="Passwort..." 
-                                        className="w-full px-4 py-3 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                                        autoFocus
-                                        required
-                                    />
-                                    <div className="flex space-x-3">
-                                        <button type="button" onClick={() => setShowAdminModal(false)} className="flex-1 bg-stone-100 text-stone-700 font-semibold py-3 rounded-xl text-sm">Abbrechen</button>
-                                        <button type="submit" className="flex-1 bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">Anmelden</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    <footer className="mt-16 bg-stone-900 text-stone-400 py-8 border-t border-stone-800">
-                        <div className="max-w-6xl mx-auto px-4 text-center text-xs">
-                            <p>© 2026 DorfNetz • Optimiert für GitHub Pages & Firebase Cloud</p>
-                        </div>
-                    </footer>
                 </div>
             );
         }
 
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
-
 </body>
 </html>
-```
