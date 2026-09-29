@@ -151,7 +151,7 @@
             } else if (status === 'security_error') {
                 badge.className = "flex items-center bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium text-red-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 mr-2";
-                text.textContent = message || "Sicherheitsproblem: Firestore Regeln blockieren Zugriff";
+                text.textContent = message || "Sicherheitsfehler: Firestore-Regeln blockieren Zugriff";
             } else if (status === 'error') {
                 badge.className = "flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 mr-2";
@@ -228,7 +228,7 @@
             } catch(e) {
                 console.error("Besucherzähler Zugriffsfehler:", e);
                 if (e.code === 'permission-denied' || (e.message && e.message.includes('permission'))) {
-                    updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore Regeln verweigern Zugriff');
+                    updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore-Regeln verweigern Zugriff');
                 } else {
                     updateFirebaseStatus('error', 'Fehler beim Laden der Besucherdaten');
                 }
@@ -250,7 +250,7 @@
                 }, (error) => {
                     console.error(`Fehler bei ${colName}:`, error);
                     if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
-                        updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore Regeln verweigern Zugriff');
+                        updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore-Regeln verweigern Zugriff');
                     } else {
                         updateFirebaseStatus('error', 'Verbindung zu Firestore unterbrochen');
                     }
@@ -369,7 +369,7 @@
                 showToast("Eintrag erfolgreich gelöscht.");
             } catch(e) {
                 console.error("Löschfehler:", e);
-                showToast("Sicherheitsfehler beim Löschen (Firestore Regeln prüfen)", "error");
+                showToast("Sicherheitsfehler beim Löschen (Firestore-Regeln prüfen)", "error");
             }
         }
 
