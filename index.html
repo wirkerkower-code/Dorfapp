@@ -407,7 +407,7 @@
                 renderMarketplace();
                 document.getElementById('adm-m-title').value = '';
                 document.getElementById('adm-m-desc').value = '';
-                alert("Offizielle Anzeige lokal auf dem Marktplatz veröffentlicht!");
+                alert("Offizielle Anzeige lokal veröffentlicht!");
                 triggerPush('market', 'Offiziell: ' + title, desc);
             }
         }
@@ -459,13 +459,13 @@
                 const now = Date.now();
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
-                    if (data.lastSeen && (now - data.lastSeen < 30000)) {
+                    if (data.lastSeen && (now - data.lastSeen < 35000)) {
                         onlineCount++;
                     }
                 });
                 const onlineCountEl = document.getElementById('online-users-count');
                 if(onlineCountEl) onlineCountEl.textContent = Math.max(1, onlineCount);
-            });
+            }, (err) => {});
         }
 
         function renderNews() {
@@ -527,22 +527,24 @@
 
         window.handleChatSubmit = async function(e) {
             e.preventDefault();
-            const author = document.getElementById('chat-author').value;
+            const author = document.getElementById('chat-author').value || "Anonym";
             const text = document.getElementById('chat-input').value;
             const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             
+            // Sofort lokal anzeigen, damit man Feedback hat
+            const tempId = 'local_' + Math.random();
+            chatMessages.push({ id: tempId, author, text, time, createdAt: Date.now() });
+            renderChat();
+            document.getElementById('chat-input').value = '';
+
             try {
                 if(!db) throw new Error();
                 await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
                     author, text, time, createdAt: Date.now()
                 });
-                document.getElementById('chat-input').value = '';
                 triggerPush('chat', author, text);
             } catch (err) {
-                chatMessages.push({ id: 'local_' + Math.random(), author, text, time, createdAt: Date.now() });
-                renderChat();
-                document.getElementById('chat-input').value = '';
-                triggerPush('chat', author, text);
+                // Wenn Cloud fehlschlägt, bleibt es lokal erhalten
             }
         }
 
@@ -704,10 +706,11 @@
                 }
 
                 const syncEl = document.getElementById('sync-status');
-                if(syncEl) syncEl.textContent = "Echtzeit-Verbindung zur Cloud aktiv.";
+                if(syncEl) syncEl.textContent = "🟢 Echtzeit-Cloud aktiv & verbunden.";
                 
                 registerVisitor();
                 listenOnlineUsers();
+                updateChatPresence();
 
                 setInterval(() => {
                     updateChatPresence();
@@ -737,7 +740,7 @@
                 }
             } catch (err) {
                 const syncEl = document.getElementById('sync-status');
-                if(syncEl) syncEl.textContent = "Echtzeit-Cloud & Lokal aktiv.";
+                if(syncEl) syncEl.textContent = "⚠️ Eingeschränkter Cloud-Modus.";
                 renderChat();
                 renderMarketplace();
                 renderEvents();
