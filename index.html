@@ -79,7 +79,6 @@
                     if (!window.FirebaseSDK) return;
                     const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FirebaseSDK;
                     
-                    // Echte Firebase Konfiguration
                     const firebaseConfig = {
                         apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
                         authDomain: "dorfapp-2c48f.firebaseapp.com",
@@ -107,7 +106,7 @@
                         });
                     } catch (e) {
                         console.error("Firebase init error:", e);
-                        setIsInitialized(true); // Auch bei Fehler UI freigeben
+                        setIsInitialized(true);
                     }
                 };
                 initFirebase();
@@ -119,7 +118,6 @@
                 const db = window.dbInstance;
                 const appId = window.appIdStr;
 
-                // Presence heartbeat
                 const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
                 const updatePresence = async () => {
                     try {
@@ -129,7 +127,6 @@
                 updatePresence();
                 const pInterval = setInterval(updatePresence, 25000);
 
-                // Live Listeners
                 const unsubChat = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages')), (snap) => {
                     const msgs = [];
                     snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
@@ -189,7 +186,6 @@
                 };
             }, [userId, userName, activeTab, pushEnabled]);
 
-            // Auto scroll chat
             useEffect(() => {
                 if (activeTab === 'chat') chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
             }, [messages, activeTab]);
@@ -765,7 +761,9 @@
             );
         }
 
-        ReactDOM.render(<App />, document.getElementById('root'));
+        // Korrigierte React 18 Root-API anstelle des alten ReactDOM.render
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 
 </body>
