@@ -17,10 +17,8 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Toast Benachrichtigung -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- Admin Passwort Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
             <h3 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-lock text-emerald-600 mr-2"></i>Admin-Bereich entsperren</h3>
@@ -33,7 +31,6 @@
         </div>
     </div>
 
-    <!-- Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -106,7 +103,6 @@
         Dorf-App &bull; Alle Daten und Aktivitäten im Überblick
     </footer>
 
-    <!-- Firebase SDKs & App Logik -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -209,7 +205,6 @@
                 setupListeners();
             } catch (e) {
                 console.error("Firebase Init Fehler:", e);
-                // Prüfen ob es ein Authentifizierungs- oder Netzwerkfehler ist
                 updateFirebaseStatus('error', 'Verbindungsfehler zu Firebase');
             }
         }
@@ -228,7 +223,6 @@
                 renderApp();
             } catch(e) {
                 console.error("Besucherzähler Zugriffsfehler:", e);
-                // Spezifische Erkennung für Sicherheitsprobleme / Firestore-Regelverstöße (permission-denied)
                 if (e.code === 'permission-denied' || (e.message && e.message.includes('permission'))) {
                     updateFirebaseStatus('security_error', 'Sicherheitsproblem: Keine Schreibrechte (Firestore Rules verweigert)');
                 } else {
@@ -247,7 +241,7 @@
                         items.push({ id: d.id, ...d.data() });
                     });
                     window.appData[colName] = items;
-                    updateFirebaseStatus('connected', 'Verbunden (Live synchronisiert)');
+                    updateFirebaseStatus('connected', 'Online & Verbunden');
                     renderApp();
                 }, (error) => {
                     console.error(`Fehler bei ${colName}:`, error);
@@ -259,7 +253,6 @@
                 });
             });
 
-            // Besucherzähler live beobachten
             const visitorDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
             onSnapshot(visitorDocRef, (snap) => {
                 if(snap.exists()) {
@@ -288,7 +281,6 @@
             }
         }
 
-        // Check if Nickname exists on load
         window.addEventListener('DOMContentLoaded', () => {
             if (!window.userNickname) {
                 setTimeout(() => {
@@ -909,7 +901,7 @@
                                             <div>
                                                 <strong>${escapeHtml(item.nickname)}</strong>: ${escapeHtml(item.message)}
                                             </div>
-                                            <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
+                                            <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-net-50 rounded">Löschen</button>
                                         </div>
                                     `).join('')}
                             </div>
