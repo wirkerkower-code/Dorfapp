@@ -1,770 +1,874 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DorfNetz - Die moderne Dorf-App</title>
-    
-    <!-- Tailwind CSS CDN -->
+    <title>Dorf-App</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- React & ReactDOM CDN -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    
-    <!-- Babel Standalone for JSX in browser -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { font-family: 'Inter', sans-serif; }
     </style>
 </head>
-<body class="bg-amber-50/40 text-stone-800 antialiased">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-    <div id="root"></div>
+    <!-- Toast Benachrichtigung -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, query, serverTimestamp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+    <!-- Admin Passwort Modal -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
+            <h3 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-lock text-emerald-600 mr-2"></i>Admin-Bereich entsperren</h3>
+            <p class="text-sm text-slate-500 mb-4">Bitte geben Sie das Admin-Passwort ein, um Zugriff auf die Verwaltung zu erhalten.</p>
+            <input type="password" id="admin-password-input" placeholder="Passwort..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none mb-4">
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">Abbrechen</button>
+                <button onclick="verifyAdminPassword()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition">Anmelden</button>
+            </div>
+        </div>
+    </div>
 
-        window.FirebaseSDK = {
-            initializeApp, getAuth, signInAnonymously, onAuthStateChanged,
-            getFirestore, collection, doc, setDoc, addDoc, deleteDoc, onSnapshot, query, serverTimestamp
-        };
-    </script>
-
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
-
-        function App() {
-            const [user, setUser] = useState(null);
-            const [userId, setUserId] = useState('');
-            const [userName, setUserName] = useState('');
-            const [activeTab, setActiveTab] = useState('chat');
-            const [isInitialized, setIsInitialized] = useState(false);
-            
-            // Admin state
-            const [isAdmin, setIsAdmin] = useState(false);
-            const [adminPasswordInput, setAdminPasswordInput] = useState('');
-            const [showAdminModal, setShowAdminModal] = useState(false);
-
-            // Firestore data states
-            const [messages, setMessages] = useState([]);
-            const [presenceList, setPresenceList] = useState([]);
-            const [marketPosts, setMarketPosts] = useState([]);
-            const [officialPosts, setOfficialPosts] = useState([]);
-            const [events, setEvents] = useState([]);
-            const [visitorStats, setVisitorStats] = useState({ count: 0, activeNow: 0 });
-
-            // Notifications & Pushup counters
-            const [notifications, setNotifications] = useState({ chat: 0, market: 0, calendar: 0, official: 0 });
-            const [pushEnabled, setPushEnabled] = useState(true);
-            const [toast, setToast] = useState(null);
-
-            // Form inputs
-            const [chatInput, setChatInput] = useState('');
-            const [marketForm, setMarketForm] = useState({ title: '', category: 'Biete', description: '', price: '', contact: '' });
-            const [officialForm, setOfficialForm] = useState({ title: '', content: '', priority: 'Normal' });
-            const [eventForm, setEventForm] = useState({ title: '', date: '', time: '', location: '', description: '' });
-            const [calendarUrl, setCalendarUrl] = useState('https://calendar.google.com/calendar/embed?src=en.german%23holiday%40group.v.calendar.google.com&ctz=Europe%2FBerlin');
-            const [customCalInput, setCustomCalInput] = useState('');
-
-            const chatEndRef = useRef(null);
-
-            useEffect(() => {
-                const initFirebase = async () => {
-                    if (!window.FirebaseSDK) return;
-                    const { initializeApp, getAuth, signInAnonymously, onAuthStateChanged, getFirestore } = window.FirebaseSDK;
-                    
-                    const firebaseConfig = {
-                        apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
-                        authDomain: "dorfapp-2c48f.firebaseapp.com",
-                        projectId: "dorfapp-2c48f",
-                        storageBucket: "dorfapp-2c48f.firebasestorage.app",
-                        messagingSenderId: "447527926701",
-                        appId: "1:447527926701:web:180ad7e2312bd96a4d7f24"
-                    };
-
-                    try {
-                        const app = initializeApp(firebaseConfig);
-                        window.dbInstance = getFirestore(app);
-                        window.authInstance = getAuth(app);
-                        window.appIdStr = 'dorfapp-production-main';
-
-                        await signInAnonymously(window.authInstance);
-
-                        onAuthStateChanged(window.authInstance, (currentUser) => {
-                            if (currentUser) {
-                                setUser(currentUser);
-                                setUserId(currentUser.uid);
-                                setUserName("Bürger " + currentUser.uid.substring(0, 4));
-                                setIsInitialized(true);
-                            }
-                        });
-                    } catch (e) {
-                        console.error("Firebase init error:", e);
-                        setIsInitialized(true);
-                    }
-                };
-                initFirebase();
-            }, []);
-
-            useEffect(() => {
-                if (!userId || !window.dbInstance) return;
-                const { collection, doc, setDoc, onSnapshot, query, serverTimestamp } = window.FirebaseSDK;
-                const db = window.dbInstance;
-                const appId = window.appIdStr;
-
-                const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
-                const updatePresence = async () => {
-                    try {
-                        await setDoc(presenceRef, { userId, name: userName || 'Nachbar', lastSeen: serverTimestamp(), activeTab }, { merge: true });
-                    } catch (err) {}
-                };
-                updatePresence();
-                const pInterval = setInterval(updatePresence, 25000);
-
-                const unsubChat = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat_messages')), (snap) => {
-                    const msgs = [];
-                    snap.forEach(d => msgs.push({ id: d.id, ...d.data() }));
-                    msgs.sort((a, b) => (a.createdAt?.toMillis?.() || 0) - (b.createdAt?.toMillis?.() || 0));
-                    if (msgs.length > messages.length && activeTab !== 'chat' && pushEnabled) {
-                        const latest = msgs[msgs.length - 1];
-                        if (latest && latest.userId !== userId) {
-                            showToast(`Neue Chatnachricht von ${latest.userName}`);
-                            setNotifications(p => ({ ...p, chat: p.chat + 1 }));
-                        }
-                    }
-                    setMessages(msgs);
-                }, (err) => console.log("Chat sync note:", err));
-
-                const unsubPresence = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'presence')), (snap) => {
-                    const list = [];
-                    const now = Date.now();
-                    snap.forEach(d => {
-                        const data = d.data();
-                        if (now - (data.lastSeen?.toMillis?.() || now) < 90000) list.push(data);
-                    });
-                    setPresenceList(list);
-                    setVisitorStats({ count: snap.size + 142, activeNow: list.length });
-                }, (err) => console.log("Presence sync note:", err));
-
-                const unsubMarket = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'market_posts')), (snap) => {
-                    const posts = [];
-                    snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
-                    posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-                    if (posts.length > marketPosts.length && activeTab !== 'market' && pushEnabled) {
-                        showToast("Neues Pinnwand-Inserat online!");
-                        setNotifications(p => ({ ...p, market: p.market + 1 }));
-                    }
-                    setMarketPosts(posts);
-                }, (err) => console.log("Market sync note:", err));
-
-                const unsubOfficial = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'official_posts')), (snap) => {
-                    const posts = [];
-                    snap.forEach(d => posts.push({ id: d.id, ...d.data() }));
-                    posts.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
-                    if (posts.length > officialPosts.length && activeTab !== 'official' && pushEnabled) {
-                        showToast("Amtliche Bekanntmachung vom Bürgermeister!");
-                        setNotifications(p => ({ ...p, official: p.official + 1 }));
-                    }
-                    setOfficialPosts(posts);
-                }, (err) => console.log("Official sync note:", err));
-
-                const unsubEvents = onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snap) => {
-                    const evs = [];
-                    snap.forEach(d => evs.push({ id: d.id, ...d.data() }));
-                    setEvents(evs);
-                }, (err) => console.log("Events sync note:", err));
-
-                return () => {
-                    clearInterval(pInterval);
-                    unsubChat(); unsubPresence(); unsubMarket(); unsubOfficial(); unsubEvents();
-                };
-            }, [userId, userName, activeTab, pushEnabled]);
-
-            useEffect(() => {
-                if (activeTab === 'chat') chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [messages, activeTab]);
-
-            const showToast = (txt) => {
-                setToast(txt);
-                setTimeout(() => setToast(null), 4000);
-            };
-
-            const switchTab = (tab) => {
-                setActiveTab(tab);
-                setNotifications(p => ({ ...p, [tab]: 0 }));
-            };
-
-            const sendChat = async (e) => {
-                e.preventDefault();
-                if (!chatInput.trim() || !window.dbInstance) return;
-                try {
-                    const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                    await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'chat_messages'), {
-                        userId, userName: userName || 'Nachbar', text: chatInput.trim(), createdAt: serverTimestamp()
-                    });
-                    setChatInput('');
-                } catch (err) {
-                    showToast('Fehler beim Senden der Nachricht.');
-                }
-            };
-
-            const createMarket = async (e) => {
-                e.preventDefault();
-                if (!marketForm.title || !window.dbInstance) return;
-                try {
-                    const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                    await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'market_posts'), {
-                        userId, userName, ...marketForm, createdAt: serverTimestamp()
-                    });
-                    setMarketForm({ title: '', category: 'Biete', description: '', price: '', contact: '' });
-                    showToast('Erfolgreich auf der Pinnwand eingestellt!');
-                } catch (err) {
-                    showToast('Fehler beim Erstellen des Inserats.');
-                }
-            };
-
-            const createOfficial = async (e) => {
-                e.preventDefault();
-                if (!isAdmin) { showToast('Nur der Administrator darf amtliche Bekanntmachungen verfassen.'); return; }
-                try {
-                    const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                    await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'official_posts'), {
-                        userId, userName: userName + ' (Bürgermeister)', ...officialForm, createdAt: serverTimestamp()
-                    });
-                    setOfficialForm({ title: '', content: '', priority: 'Normal' });
-                    showToast('Amtliche Mitteilung im Schwarzen Brett veröffentlicht.');
-                } catch (err) {
-                    showToast('Fehler beim Veröffentlichen.');
-                }
-            };
-
-            const createEvent = async (e) => {
-                e.preventDefault();
-                if (!eventForm.title || !window.dbInstance) return;
-                try {
-                    const { addDoc, collection, serverTimestamp } = window.FirebaseSDK;
-                    await addDoc(collection(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', 'events'), {
-                        userId, userName, ...eventForm, createdAt: serverTimestamp()
-                    });
-                    setEventForm({ title: '', date: '', time: '', location: '', description: '' });
-                    showToast('Termin im Kalender eingetragen!');
-                } catch (err) {
-                    showToast('Fehler beim Hinzufügen des Termins.');
-                }
-            };
-
-            const deleteDocItem = async (colName, id, ownerId) => {
-                if (!isAdmin && userId !== ownerId) {
-                    showToast('Keine Berechtigung zum Löschen dieses Eintrags.');
-                    return;
-                }
-                if (!window.confirm("Diesen Eintrag wirklich löschen?")) return;
-                try {
-                    const { deleteDoc, doc } = window.FirebaseSDK;
-                    await deleteDoc(doc(window.dbInstance, 'artifacts', window.appIdStr, 'public', 'data', colName, id));
-                    showToast('Eintrag erfolgreich gelöscht.');
-                } catch (err) {
-                    showToast('Fehler beim Löschen.');
-                }
-            };
-
-            const handleAdminLogin = (e) => {
-                e.preventDefault();
-                if (adminPasswordInput === 'dorfadmin' || adminPasswordInput === 'admin123') {
-                    setIsAdmin(true);
-                    setShowAdminModal(false);
-                    setAdminPasswordInput('');
-                    showToast('Administrator-Modus erfolgreich aktiviert!');
-                } else {
-                    showToast('Falsches Admin-Passwort! (Tipp: dorfadmin)');
-                }
-            };
-
-            if (!isInitialized) {
-                return (
-                    <div className="min-h-screen flex flex-col items-center justify-center bg-emerald-950 text-amber-100">
-                        <div className="text-5xl mb-4 animate-bounce">🏡</div>
-                        <h2 className="text-xl font-bold">DorfNetz verbindet sich mit der Cloud...</h2>
-                        <p className="text-xs text-amber-300 mt-2">Bitte einen Augenblick Geduld.</p>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="min-h-screen flex flex-col">
-                    
-                    {toast && (
-                        <div className="fixed top-5 right-5 z-50 bg-emerald-800 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center space-x-3 border border-emerald-600 animate-bounce">
-                            <span className="text-xl">🔔</span>
-                            <span className="font-semibold text-sm">{toast}</span>
-                        </div>
-                    )}
-
-                    <header className="bg-emerald-900 text-amber-50 shadow-lg border-b-4 border-amber-600">
-                        <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-                            <div className="flex items-center space-x-3">
-                                <div className="bg-amber-600 p-3 rounded-2xl text-2xl shadow">🏡</div>
-                                <div>
-                                    <h1 className="text-2xl font-black tracking-tight">DorfNetz</h1>
-                                    <p className="text-xs text-amber-200">Live-Gemeindeportal • Firebase Cloud</p>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center space-x-3 flex-wrap justify-center">
-                                <div className="bg-emerald-800 px-3 py-1.5 rounded-xl border border-emerald-700 flex items-center space-x-2">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                                    <input 
-                                        type="text" 
-                                        value={userName} 
-                                        onChange={(e) => setUserName(e.target.value)} 
-                                        className="bg-transparent text-amber-100 text-sm font-semibold focus:outline-none w-36 border-b border-emerald-600"
-                                        placeholder="Name..."
-                                    />
-                                </div>
-
-                                {isAdmin ? (
-                                    <span className="bg-amber-500 text-amber-950 font-bold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1 shadow">
-                                        🛡️ Admin aktiv
-                                        <button onClick={() => setIsAdmin(false)} className="ml-2 text-red-900 font-extrabold underline">[Ausloggen]</button>
-                                    </span>
-                                ) : (
-                                    <button 
-                                        onClick={() => setShowAdminModal(true)}
-                                        className="bg-emerald-800 hover:bg-emerald-700 text-amber-200 text-xs px-3 py-2 rounded-xl font-medium transition border border-emerald-600"
-                                    >
-                                        🔐 Admin Login
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-                    </header>
-
-                    <nav className="bg-white shadow-sm border-b border-stone-200 sticky top-0 z-40">
-                        <div className="max-w-6xl mx-auto px-4 flex justify-between items-center overflow-x-auto">
-                            <div className="flex space-x-1 py-2">
-                                {[
-                                    { id: 'chat', label: 'Live-Chat', icon: '💬', badge: notifications.chat },
-                                    { id: 'market', label: 'Pinnwand', icon: '📌', badge: notifications.market },
-                                    { id: 'calendar', label: 'Terminkalender', icon: '📅', badge: notifications.calendar },
-                                    { id: 'official', label: 'Schwarzes Brett', icon: '🏛️', badge: notifications.official },
-                                    { id: 'admin', label: 'Dorfverwaltung', icon: '⚙️', badge: 0 }
-                                ].map(t => (
-                                    <button
-                                        key={t.id}
-                                        onClick={() => switchTab(t.id)}
-                                        className={`relative px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center space-x-2 whitespace-nowrap ${
-                                            activeTab === t.id ? 'bg-emerald-800 text-white shadow-md' : 'text-stone-600 hover:bg-amber-100'
-                                        }`}
-                                    >
-                                        <span>{t.icon}</span>
-                                        <span>{t.label}</span>
-                                        {t.badge > 0 && (
-                                            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-5 h-5 rounded-full flex items-center justify-center font-bold animate-pulse">
-                                                {t.badge}
-                                            </span>
-                                        )}
-                                    </button>
-                                ))}
-                            </div>
-
-                            <div className="hidden md:flex items-center space-x-2 text-xs text-stone-500">
-                                <label className="flex items-center cursor-pointer">
-                                    <input type="checkbox" checked={pushEnabled} onChange={(e) => setPushEnabled(e.target.checked)} className="mr-1.5" />
-                                    <span>🔔 Push-Hinweise</span>
-                                </label>
-                            </div>
-                        </div>
-                    </nav>
-
-                    <main className="max-w-6xl mx-auto px-4 py-6 flex-1 w-full">
-
-                        {/* 1. LIVE CHAT */}
-                        {activeTab === 'chat' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                                <div className="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-stone-200 flex flex-col h-[620px]">
-                                    <div className="bg-emerald-900 text-white px-6 py-4 rounded-t-2xl flex justify-between items-center">
-                                        <div>
-                                            <h2 className="font-bold text-lg">Dorf-Live-Chat</h2>
-                                            <p className="text-xs text-amber-200">Echtzeit-Austausch für Nachbarn</p>
-                                        </div>
-                                        <span className="text-xs bg-emerald-800 px-3 py-1 rounded-full">{presenceList.length} Anwesend</span>
-                                    </div>
-
-                                    <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-stone-50/50">
-                                        {messages.length === 0 ? (
-                                            <div className="text-center py-20 text-stone-400">
-                                                <p className="text-4xl mb-2">🍃</p>
-                                                <p>Noch keine Nachrichten. Schreiben Sie den ersten Gruß!</p>
-                                            </div>
-                                        ) : (
-                                            messages.map(msg => {
-                                                const isOwn = msg.userId === userId;
-                                                return (
-                                                    <div key={msg.id} className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-                                                        <div className="flex items-center space-x-2 mb-1">
-                                                            <span className="text-xs font-bold text-stone-600">{msg.userName}</span>
-                                                        </div>
-                                                        <div className={`max-w-md px-4 py-3 rounded-2xl text-sm relative group shadow-sm ${
-                                                            isOwn ? 'bg-emerald-700 text-white rounded-tr-none' : 'bg-white text-stone-800 border border-stone-200 rounded-tl-none'
-                                                        }`}>
-                                                            <p className="break-words">{msg.text}</p>
-                                                            {(isAdmin || isOwn) && (
-                                                                <button 
-                                                                    onClick={() => deleteDocItem('chat_messages', msg.id, msg.userId)}
-                                                                    className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] px-1.5 py-0.5 rounded-full opacity-0 group-hover:opacity-100 transition"
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })
-                                        )}
-                                        <div ref={chatEndRef} />
-                                    </div>
-
-                                    <form onSubmit={sendChat} className="p-4 bg-white border-t border-stone-200 flex gap-3 rounded-b-2xl">
-                                        <input 
-                                            type="text" 
-                                            value={chatInput} 
-                                            onChange={(e) => setChatInput(e.target.value)} 
-                                            placeholder="Nachricht eingeben..." 
-                                            className="flex-1 px-4 py-3 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                                        />
-                                        <button type="submit" className="bg-emerald-800 hover:bg-emerald-700 text-white px-6 py-3 rounded-xl font-semibold text-sm">
-                                            Senden ➔
-                                        </button>
-                                    </form>
-                                </div>
-
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-5 flex flex-col h-[620px]">
-                                    <h3 className="font-bold text-stone-900 border-b border-stone-200 pb-3 mb-3 flex justify-between">
-                                        <span>🟢 Anwesend</span>
-                                        <span className="text-xs bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">{presenceList.length}</span>
-                                    </h3>
-                                    <div className="flex-1 overflow-y-auto space-y-3">
-                                        {presenceList.map((p, i) => (
-                                            <div key={i} className="flex items-center space-x-3 p-2.5 rounded-xl bg-stone-50 border border-stone-100">
-                                                <div className="w-8 h-8 rounded-full bg-emerald-700 text-white font-bold flex items-center justify-center text-xs">
-                                                    {p.name?.[0] || 'D'}
-                                                </div>
-                                                <div className="overflow-hidden">
-                                                    <p className="text-sm font-semibold text-stone-800 truncate">{p.name}</p>
-                                                    <p className="text-[10px] text-stone-400 capitalize">Bereich: {p.activeTab || 'chat'}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="mt-4 pt-3 border-t border-stone-200 text-xs text-stone-500 text-center">
-                                        Gesamt-Aufrufe: <strong className="text-stone-800">{visitorStats.count}</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 2. MARKETPLACE PINNWAND */}
-                        {activeTab === 'market' && (
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
-                                    <h3 className="font-bold text-lg text-emerald-900 mb-2">📌 Neues Inserat aufgeben</h3>
-                                    <p className="text-xs text-stone-500 mb-4">Biete Werkzeug, suche Hilfe oder verschenke Gegenstände.</p>
-                                    
-                                    <form onSubmit={createMarket} className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Kategorie</label>
-                                            <select 
-                                                value={marketForm.category} 
-                                                onChange={(e) => setMarketForm({...marketForm, category: e.target.value})}
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white"
-                                            >
-                                                <option value="Biete">🟢 Biete</option>
-                                                <option value="Suche">🔵 Suche</option>
-                                                <option value="Verschenke">🎁 Verschenke</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Titel</label>
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.title} 
-                                                onChange={(e) => setMarketForm({...marketForm, title: e.target.value})}
-                                                placeholder="z.B. Leiter auszuleihen" 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-stone-700 mb-1">Beschreibung</label>
-                                            <textarea 
-                                                value={marketForm.description} 
-                                                onChange={(e) => setMarketForm({...marketForm, description: e.target.value})}
-                                                placeholder="Details..." 
-                                                rows="3"
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                                required
-                                            />
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.price} 
-                                                onChange={(e) => setMarketForm({...marketForm, price: e.target.value})}
-                                                placeholder="Preis / Gratis" 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                            />
-                                            <input 
-                                                type="text" 
-                                                value={marketForm.contact} 
-                                                onChange={(e) => setMarketForm({...marketForm, contact: e.target.value})}
-                                                placeholder="Kontakt / Hausnr." 
-                                                className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm"
-                                            />
-                                        </div>
-                                        <button type="submit" className="w-full bg-emerald-800 text-white font-semibold py-3 rounded-xl text-sm shadow">
-                                            Auf Pinnwand veröffentlichen
-                                        </button>
-                                    </form>
-                                </div>
-
-                                <div className="lg:col-span-2 space-y-4">
-                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-stone-200 flex justify-between items-center">
-                                        <h3 className="font-bold text-stone-900">Aktuelle Pinnwand-Anzeigen</h3>
-                                        <span className="text-xs bg-stone-100 px-3 py-1 rounded-full text-stone-600 font-medium">{marketPosts.length} Inserate</span>
-                                    </div>
-
-                                    {marketPosts.length === 0 ? (
-                                        <div className="bg-white rounded-2xl p-12 text-center border border-stone-200 text-stone-400">
-                                            <p className="text-3xl mb-2">📋</p>
-                                            <p>Keine Einträge auf der Pinnwand.</p>
-                                        </div>
-                                    ) : (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {marketPosts.map(p => (
-                                                <div key={p.id} className="bg-white p-5 rounded-2xl shadow-sm border border-stone-200 flex flex-col justify-between relative group">
-                                                    <div>
-                                                        <div className="flex justify-between items-start mb-2">
-                                                            <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-800">
-                                                                {p.category}
-                                                            </span>
-                                                            <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded">
-                                                                {p.price || 'Gratis'}
-                                                            </span>
-                                                        </div>
-                                                        <h4 className="font-bold text-stone-900 text-base mb-1">{p.title}</h4>
-                                                        <p className="text-sm text-stone-600 mb-4 whitespace-pre-wrap">{p.description}</p>
-                                                    </div>
-                                                    <div className="pt-3 border-t border-stone-100 flex justify-between items-center text-xs text-stone-500">
-                                                        <div>
-                                                            <p className="font-semibold text-stone-700">{p.userName}</p>
-                                                            <p>Kontakt: {p.contact || 'Im Profil'}</p>
-                                                        </div>
-                                                        {(isAdmin || p.userId === userId) && (
-                                                            <button onClick={() => deleteDocItem('market_posts', p.id, p.userId)} className="text-red-600 font-semibold px-2 py-1 bg-red-50 rounded">
-                                                                Löschen
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 3. CALENDAR TAB */}
-                        {activeTab === 'calendar' && (
-                            <div className="space-y-6">
-                                <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-                                        <div>
-                                            <h3 className="font-bold text-lg text-emerald-900">📅 Offizieller Kalender</h3>
-                                            <p className="text-xs text-stone-500">Gemeinde-Fahrplan für Müllabfuhr, Feste und Veranstaltungen.</p>
-                                        </div>
-                                        {isAdmin && (
-                                            <div className="flex gap-2 w-full sm:w-auto">
-                                                <input 
-                                                    type="text" 
-                                                    placeholder="Google Calendar Embed URL..." 
-                                                    value={customCalInput} 
-                                                    onChange={(e) => setCustomCalInput(e.target.value)} 
-                                                    className="px-3 py-1.5 border border-stone-300 rounded-xl text-xs w-64"
-                                                />
-                                                <button onClick={() => { if(customCalInput) setCalendarUrl(customCalInput); showToast('Kalender aktualisiert!'); }} className="bg-emerald-800 text-white text-xs px-3 py-1.5 rounded-xl">
-                                                    Einbinden
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="w-full h-[420px] rounded-xl overflow-hidden border border-stone-200">
-                                        <iframe src={calendarUrl} className="w-full h-full border-0" frameBorder="0"></iframe>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6 h-fit">
-                                        <h3 className="font-bold text-base text-emerald-900 mb-2">Dorf-Termin eintragen</h3>
-                                        <form onSubmit={createEvent} className="space-y-3">
-                                            <input type="text" placeholder="Titel (z.B. Feuerwehrfest)" value={eventForm.title} onChange={e=>setEventForm({...eventForm, title: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" required />
-                                            <input type="date" value={eventForm.date} onChange={e=>setEventForm({...eventForm, date: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" required />
-                                            <input type="text" placeholder="Uhrzeit (z.B. 18:00 Uhr)" value={eventForm.time} onChange={e=>setEventForm({...eventForm, time: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" />
-                                            <input type="text" placeholder="Ort (z.B. Bürgerhaus)" value={eventForm.location} onChange={e=>setEventForm({...eventForm, location: e.target.value})} className="w-full px-3 py-2 border border-stone-300 rounded-xl text-sm" />
-                                            <button type="submit" className="w-full bg-emerald-800 text-white font-semibold py-2.5 rounded-xl text-sm">Termin hinzufügen</button>
-                                        </form>
-                                    </div>
-
-                                    <div className="lg:col-span-2 space-y-3">
-                                        <h3 className="font-bold text-stone-900 bg-white p-4 rounded-2xl border border-stone-200">Anstehende lokale Termine</h3>
-                                        {events.map(ev => (
-                                            <div key={ev.id} className="bg-white p-4 rounded-2xl border border-stone-200 flex justify-between items-center">
-                                                <div>
-                                                    <h4 className="font-bold text-stone-900">{ev.title}</h4>
-                                                    <p className="text-xs text-stone-500">📅 {ev.date} • 🕒 {ev.time} • 📍 {ev.location}</p>
-                                                </div>
-                                                {(isAdmin || ev.userId === userId) && (
-                                                    <button onClick={() => deleteDocItem('events', ev.id, ev.userId)} className="text-red-600 text-xs font-semibold px-3 py-1 bg-red-50 rounded">Löschen</button>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 4. OFFICIAL BULLETIN BOARD */}
-                        {activeTab === 'official' && (
-                            <div className="space-y-6">
-                                {isAdmin ? (
-                                    <div className="bg-white rounded-2xl shadow-sm border-2 border-amber-500 p-6">
-                                        <h3 className="font-bold text-lg text-amber-900 mb-2">🏛️ Amtliche Bekanntmachung erstellen</h3>
-                                        <form onSubmit={createOfficial} className="space-y-4">
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <input type="text" placeholder="Titel..." value={officialForm.title} onChange={e=>setOfficialForm({...officialForm, title: e.target.value})} className="md:col-span-2 px-3 py-2.5 border border-stone-300 rounded-xl text-sm" required />
-                                                <select value={officialForm.priority} onChange={e=>setOfficialForm({...officialForm, priority: e.target.value})} className="px-3 py-2.5 border border-stone-300 rounded-xl text-sm bg-white">
-                                                    <option value="Normal">Normal</option>
-                                                    <option value="Wichtig">Wichtig</option>
-                                                    <option value="Dringend">Dringend</option>
-                                                </select>
-                                            </div>
-                                            <textarea placeholder="Inhalt der Bekanntmachung..." rows="3" value={officialForm.content} onChange={e=>setOfficialForm({...officialForm, content: e.target.value})} className="w-full px-3 py-2.5 border border-stone-300 rounded-xl text-sm" required />
-                                            <button type="submit" className="bg-amber-600 hover:bg-amber-700 text-amber-950 font-bold px-6 py-3 rounded-xl text-sm">
-                                                Offiziell veröffentlichen
-                                            </button>
-                                        </form>
-                                    </div>
-                                ) : (
-                                    <div className="bg-amber-100/60 border border-amber-300 p-4 rounded-2xl flex justify-between items-center">
-                                        <p className="text-xs text-amber-900 font-medium">Das offizielle Schwarze Brett wird exklusiv von der Dorfverwaltung gepflegt.</p>
-                                        <button onClick={() => setShowAdminModal(true)} className="bg-amber-600 text-white text-xs px-4 py-2 rounded-xl font-bold">Admin-Login</button>
-                                    </div>
-                                )}
-
-                                <div className="space-y-4">
-                                    {officialPosts.map(post => (
-                                        <div key={post.id} className="p-6 rounded-2xl shadow-sm border-2 border-stone-200 bg-white relative">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs px-2.5 py-1 rounded-full font-bold bg-amber-500 text-white">{post.priority}</span>
-                                                {isAdmin && (
-                                                    <button onClick={() => deleteDocItem('official_posts', post.id, post.userId)} className="text-red-600 text-xs font-bold px-2 py-1 bg-red-50 rounded">Löschen</button>
-                                                )}
-                                            </div>
-                                            <h4 className="font-bold text-stone-900 text-lg mb-1">{post.title}</h4>
-                                            <p className="text-sm text-stone-700 whitespace-pre-wrap">{post.content}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* 5. ADMIN PANEL & GITHUB GUIDE */}
-                        {activeTab === 'admin' && (
-                            <div className="space-y-6">
-                                {isAdmin ? (
-                                    <div className="space-y-6">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Aktive Bürger</p>
-                                                <h4 className="text-2xl font-black text-stone-900">{visitorStats.activeNow}</h4>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Gesamt-Aufrufe</p>
-                                                <h4 className="text-2xl font-black text-stone-900">{visitorStats.count}</h4>
-                                            </div>
-                                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200">
-                                                <p className="text-xs text-stone-500">Admin-Status</p>
-                                                <h4 className="text-lg font-black text-emerald-700">Vollzugriff</h4>
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
-                                            <h3 className="font-bold text-lg text-emerald-900 mb-2">🚀 Anleitung für GitHub Pages</h3>
-                                            <ol className="list-decimal list-inside text-sm text-stone-700 space-y-2 leading-relaxed">
-                                                <li>Erstellen Sie ein neues Repository auf GitHub.</li>
-                                                <li>Speichern Sie diesen vollständigen Code als <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">index.html</code> im Hauptverzeichnis.</li>
-                                                <li>Gehen Sie zu <strong>Settings → Pages</strong> und aktivieren Sie das Deployment über den <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">main</code>-Branch.</li>
-                                                <li>Ihre App verbindet sich direkt mit Ihrem Firebase-Projekt <code className="bg-stone-100 px-1.5 py-0.5 rounded font-mono">dorfapp-2c48f</code>!</li>
-                                            </ol>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-12 text-center max-w-md mx-auto">
-                                        <div className="text-4xl mb-3">🔐</div>
-                                        <h3 className="font-bold text-xl text-stone-900 mb-2">Administrator-Bereich</h3>
-                                        <p className="text-xs text-stone-500 mb-6">Bitte anmelden, um die Verwaltungstools zu öffnen.</p>
-                                        <button onClick={() => setShowAdminModal(true)} className="bg-emerald-800 text-white font-bold px-6 py-3 rounded-xl text-sm shadow w-full">
-                                            Als Admin einloggen
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                    </main>
-
-                    {showAdminModal && (
-                        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                            <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-stone-200">
-                                <h3 className="text-xl font-black text-stone-900 mb-2">Administrator-Anmeldung</h3>
-                                <p className="text-xs text-stone-500 mb-4">Passwort eingeben (Standard: <code className="bg-stone-100 px-1 font-mono">dorfadmin</code>)</p>
-                                <form onSubmit={handleAdminLogin} className="space-y-4">
-                                    <input 
-                                        type="password" 
-                                        value={adminPasswordInput} 
-                                        onChange={(e) => setAdminPasswordInput(e.target.value)} 
-                                        placeholder="Passwort..." 
-                                        className="w-full px-4 py-3 border border-stone-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                                        autoFocus
-                                        required
-                                    />
-                                    <div className="flex space-x-3">
-                                        <button type="button" onClick={() => setShowAdminModal(false)} className="flex-1 bg-stone-100 text-stone-700 font-semibold py-3 rounded-xl text-sm">Abbrechen</button>
-                                        <button type="submit" className="flex-1 bg-emerald-800 text-white font-bold py-3 rounded-xl text-sm shadow">Anmelden</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    )}
-
-                    <footer className="mt-16 bg-stone-900 text-stone-400 py-8 border-t border-stone-800">
-                        <div className="max-w-6xl mx-auto px-4 text-center text-xs">
-                            <p>© 2026 DorfNetz • Projekt: dorfapp-2c48f</p>
-                        </div>
-                    </footer>
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-emerald-600 text-white p-2.5 rounded-2xl shadow-md">
+                    <i class="fa-solid fa-house-chimney text-xl"></i>
                 </div>
-            );
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Dorf-App <span class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold ml-2">Gemeinschaft</span></h1>
+                    <p class="text-xs text-slate-500">Gemeinsam vernetzt im Dorf</p>
+                </div>
+            </div>
+
+            <!-- Nickname & Admin Status -->
+            <div class="flex items-center space-x-3">
+                <div id="nickname-display-container" class="flex items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
+                    <span class="text-xs text-slate-400 mr-2"><i class="fa-solid fa-user mr-1"></i>Nickname:</span>
+                    <span id="current-nickname-text" class="text-xs font-bold text-slate-700 mr-2">Nicht festgelegt</span>
+                    <button onclick="openNicknameModal()" class="text-emerald-600 hover:text-emerald-700 text-xs font-semibold underline">Ändern</button>
+                </div>
+                <button id="admin-btn" onclick="handleAdminClick()" class="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition shadow-sm">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span id="admin-btn-text">Admin</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-slate-50 border-t border-slate-200">
+            <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-2 py-2 scrollbar-none">
+                <button onclick="switchTab('checkin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm" data-tab="checkin">
+                    <i class="fa-solid fa-clipboard-check"></i><span>Checkprogramm</span>
+                </button>
+                <button onclick="switchTab('pinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="pinwand">
+                    <i class="fa-solid fa-signs-post"></i><span>Pin-wand</span>
+                </button>
+                <button onclick="switchTab('schwarzesbrett')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="schwarzesbrett">
+                    <i class="fa-solid fa-note-sticky"></i><span>Schwarzes Brett</span>
+                </button>
+                <button onclick="switchTab('hinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="hinwand">
+                    <i class="fa-solid fa-bullhorn text-amber-600"></i><span>Hinwand</span>
+                </button>
+                <button onclick="switchTab('chat')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="chat">
+                    <i class="fa-solid fa-comments"></i><span>Dorf-Chat</span>
+                </button>
+                <button onclick="switchTab('kalender')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="kalender">
+                    <i class="fa-solid fa-calendar-days"></i><span>Terminkalender</span>
+                </button>
+                <button id="admin-tab-btn" onclick="switchTab('admin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 hidden" data-tab="admin">
+                    <i class="fa-solid fa-gears text-amber-500"></i><span>Adminbereich</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6">
+        <div id="tab-content" class="w-full">
+            <!-- Wird dynamisch gerendert -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        Dorf-App &bull; Alle Daten und Aktivitäten im Überblick
+    </footer>
+
+    <!-- Firebase SDKs & App Logik -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Benutzerdefinierte Firebase Konfiguration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
+            authDomain: "dorfapp-2c48f.firebaseapp.com",
+            projectId: "dorfapp-2c48f",
+            storageBucket: "dorfapp-2c48f.firebasestorage.app",
+            messagingSenderId: "447527926701",
+            appId: "1:447527926701:web:180ad7e2312bd96a4d7f24"
+        };
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dorf-app-default';
+
+        let app, db, auth, currentUser = null;
+        window.appData = {
+            checkins: [],
+            pinwand: [],
+            schwarzesbrett: [],
+            hinwand: [],
+            chat: [],
+            visitors: 0
+        };
+
+        window.currentTab = 'checkin';
+        window.userNickname = localStorage.getItem('dorf_nickname') || '';
+        window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
+
+        // Toast Helper
+        window.showToast = function(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = `p-4 rounded-xl shadow-lg text-sm font-medium text-white transition transform translate-y-2 opacity-0 pointer-events-auto flex items-center space-x-2 ${type === 'error' ? 'bg-red-600' : 'bg-emerald-600'}`;
+            toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-check'}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.classList.remove('translate-y-2', 'opacity-0'); }, 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        // Escape HTML
+        window.escapeHtml = function(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Korrigierte React 18 Root-API anstelle des alten ReactDOM.render
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        // Initialize Firebase
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
 
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                currentUser = auth.currentUser;
+
+                // Besucherzähler erhöhen
+                await registerVisitor();
+
+                // Live Listeners starten
+                setupListeners();
+            } catch (e) {
+                console.error("Firebase Init Fehler:", e);
+                // Keine Toast-Fehlermeldung mehr anzeigen, da App im Offline-Modus weiterläuft
+            }
+        }
+
+        async function registerVisitor() {
+            if (!db) return;
+            try {
+                const visitorDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
+                const snap = await getDoc(visitorDocRef);
+                let count = 1;
+                if (snap.exists()) {
+                    count = (snap.data().count || 0) + 1;
+                }
+                await setDoc(visitorDocRef, { count: count }, { merge: true });
+                window.appData.visitors = count;
+                renderApp();
+            } catch(e) {
+                console.error("Besucherzähler Fehler:", e);
+            }
+        }
+
+        function setupListeners() {
+            const collections = ['checkins', 'pinwand', 'schwarzesbrett', 'hinwand', 'chat'];
+            collections.forEach(colName => {
+                const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
+                onSnapshot(colRef, (snapshot) => {
+                    const items = [];
+                    snapshot.forEach(d => {
+                        items.push({ id: d.id, ...d.data() });
+                    });
+                    window.appData[colName] = items;
+                    renderApp();
+                }, (error) => {
+                    console.error(`Fehler bei ${colName}:`, error);
+                });
+            });
+
+            // Besucherzähler live beobachten
+            const visitorDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
+            onSnapshot(visitorDocRef, (snap) => {
+                if(snap.exists()) {
+                    window.appData.visitors = snap.data().count || 0;
+                    renderApp();
+                }
+            });
+        }
+
+        // Nickname Modal Management
+        window.openNicknameModal = function() {
+            const name = prompt("Bitte gib deinen Dorf-Nickname ein:", window.userNickname);
+            if (name !== null) {
+                const trimmed = name.trim();
+                if (trimmed) {
+                    window.userNickname = trimmed;
+                    localStorage.setItem('dorf_nickname', trimmed);
+                    document.getElementById('current-nickname-text').textContent = trimmed;
+                    showToast("Nickname gespeichert!");
+                    renderApp();
+                } else {
+                    showToast("Der Nickname darf nicht leer sein.", "error");
+                }
+            }
+        }
+
+        // Check if Nickname exists on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!window.userNickname) {
+                setTimeout(() => {
+                    openNicknameModal();
+                }, 500);
+            } else {
+                document.getElementById('current-nickname-text').textContent = window.userNickname;
+            }
+            updateAdminUI();
+            renderApp();
+            initFirebase();
+        });
+
+        // Tab Navigation
+        window.switchTab = function(tabName) {
+            if (tabName === 'admin' && !window.isAdmin) {
+                document.getElementById('admin-modal').classList.remove('hidden');
+                return;
+            }
+            window.currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm";
+                } else {
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60";
+                }
+            });
+            renderApp();
+        }
+
+        // Admin Access Handling
+        window.handleAdminClick = function() {
+            if (window.isAdmin) {
+                if (confirm("Möchtest du den Admin-Modus verlassen?")) {
+                    window.isAdmin = false;
+                    localStorage.setItem('dorf_is_admin', 'false');
+                    updateAdminUI();
+                    if(window.currentTab === 'admin') switchTab('checkin');
+                    showToast("Admin-Modus beendet");
+                }
+            } else {
+                document.getElementById('admin-modal').classList.remove('hidden');
+            }
+        }
+
+        window.closeAdminModal = function() {
+            document.getElementById('admin-modal').classList.add('hidden');
+            document.getElementById('admin-password-input').value = '';
+        }
+
+        window.verifyAdminPassword = function() {
+            const pwd = document.getElementById('admin-password-input').value;
+            if (pwd === "dorf2026" || pwd === "admin") {
+                window.isAdmin = true;
+                localStorage.setItem('dorf_is_admin', 'true');
+                closeAdminModal();
+                updateAdminUI();
+                showToast("Admin-Bereich erfolgreich entsperrt!");
+                switchTab('admin');
+            } else {
+                showToast("Falsches Passwort!", "error");
+            }
+        }
+
+        window.updateAdminUI = function() {
+            const adminTabBtn = document.getElementById('admin-tab-btn');
+            const adminBtnText = document.getElementById('admin-btn-text');
+            if (window.isAdmin) {
+                adminTabBtn.classList.remove('hidden');
+                adminBtnText.textContent = "Admin Aktiv";
+            } else {
+                adminTabBtn.classList.add('hidden');
+                adminBtnText.textContent = "Admin";
+            }
+        }
+
+        // Universal Delete Function for Admin
+        window.deleteItem = async function(collectionName, id) {
+            if (!window.isAdmin) {
+                showToast("Nur Admins dürfen Einträge löschen!", "error");
+                return;
+            }
+            if (!confirm("Möchtest du diesen Eintrag wirklich löschen?")) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', collectionName, id));
+                showToast("Eintrag erfolgreich gelöscht.");
+            } catch(e) {
+                console.error("Löschfehler:", e);
+                showToast("Fehler beim Löschen", "error");
+            }
+        }
+
+        // Render Application Main View
+        window.renderApp = function() {
+            const container = document.getElementById('tab-content');
+            if (!container) return;
+
+            switch(window.currentTab) {
+                case 'checkin':
+                    container.innerHTML = renderCheckinView();
+                    break;
+                case 'pinwand':
+                    container.innerHTML = renderPinwandView();
+                    break;
+                case 'schwarzesbrett':
+                    container.innerHTML = renderSchwarzesBrettView();
+                    break;
+                case 'hinwand':
+                    container.innerHTML = renderHinwandView();
+                    break;
+                case 'chat':
+                    container.innerHTML = renderChatView();
+                    setTimeout(() => {
+                        const box = document.getElementById('chat-messages-box');
+                        if(box) box.scrollTop = box.scrollHeight;
+                    }, 50);
+                    break;
+                case 'kalender':
+                    container.innerHTML = renderKalenderView();
+                    break;
+                case 'admin':
+                    container.innerHTML = renderAdminView();
+                    break;
+                default:
+                    container.innerHTML = renderCheckinView();
+            }
+        }
+
+        // 1. Checkprogramm View
+        function renderCheckinView() {
+            const list = window.appData.checkins || [];
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Dorf-Checkin</h2>
+                        <p class="text-xs text-slate-500 mb-6">Trage dich ein, damit die Dorfgemeinschaft weiß, wer gerade anwesend oder aktiv ist.</p>
+                        
+                        <form onsubmit="submitCheckin(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Dein Status / Aktivität</label>
+                                <input type="text" id="checkin-status" placeholder="z.B. Im Garten, Anwesend, Hilfe verfügbar..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ort / Bereich im Dorf</label>
+                                <input type="text" id="checkin-location" placeholder="z.B. Dorfplatz, Hauptstraße..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-check mr-2"></i>Einchecken
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-users text-emerald-600 mr-2"></i>Aktive Dorfbewohner (${list.length})</h2>
+                        <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Aktuell hat sich noch niemand eingecheckt.</p>' :
+                                list.map(item => `
+                                    <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 flex justify-between items-center">
+                                        <div>
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-bold text-sm text-slate-800">${escapeHtml(item.nickname)}</span>
+                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">${escapeHtml(item.status)}</span>
+                                            </div>
+                                            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location || 'Kein Ort angegeben')} &bull; <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></p>
+                                        </div>
+                                        ${window.isAdmin ? `<button onclick="deleteItem('checkins', '${item.id}')" class="text-red-500 hover:text-red-700 text-xs px-2.5 py-1 rounded-lg bg-red-50 font-medium">Löschen</button>` : ''}
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.submitCheckin = async function(e) {
+            e.preventDefault();
+            if (!window.userNickname) { openNicknameModal(); return; }
+            const status = document.getElementById('checkin-status').value.trim();
+            const location = document.getElementById('checkin-location').value.trim();
+            if (!status) return;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'checkins'), {
+                    nickname: window.userNickname,
+                    status: status,
+                    location: location,
+                    timestamp: Date.now()
+                });
+                document.getElementById('checkin-status').value = '';
+                document.getElementById('checkin-location').value = '';
+                showToast("Erfolgreich eingecheckt!");
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Checkin", "error");
+            }
+        }
+
+        // 2. Pin-wand (Suchen / Bieten / Verschenken) View
+        function renderPinwandView() {
+            const list = window.appData.pinwand || [];
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-signs-post text-emerald-600 mr-2"></i>Pin-wand Anzeige</h2>
+                        <p class="text-xs text-slate-500 mb-6">Biete etwas an, suche nach Hilfe oder verschenke Gegenstände an Nachbarn.</p>
+                        
+                        <form onsubmit="submitPinwand(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategorie</label>
+                                <select id="pin-category" class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                    <option value="Biete">Biete</option>
+                                    <option value="Suche">Suche</option>
+                                    <option value="Verschenke">Verschenke</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
+                                <input type="text" id="pin-title" placeholder="z.B. Rasenmäher auszuleihen..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung & Kontakt</label>
+                                <textarea id="pin-desc" rows="3" placeholder="Details und wie man dich erreicht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-paper-plane mr-2"></i>Anzeige veröffentlichen
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-emerald-600 mr-2"></i>Aktuelle Pin-wand Inserate</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center col-span-2">Noch keine Anzeigen auf der Pin-wand.</p>' :
+                                list.map(item => {
+                                    const badgeColor = item.category === 'Verschenke' ? 'bg-amber-100 text-amber-800' : (item.category === 'Suche' ? 'bg-blue-100 text-blue-800' : 'bg-emerald-100 text-emerald-800');
+                                    return `
+                                        <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                                            <div>
+                                                <div class="flex justify-between items-start mb-2">
+                                                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full ${badgeColor}">${escapeHtml(item.category)}</span>
+                                                    <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</span>
+                                                </div>
+                                                <h3 class="font-bold text-sm text-slate-800 mb-1">${escapeHtml(item.title)}</h3>
+                                                <p class="text-xs text-slate-600 mb-3 whitespace-pre-wrap">${escapeHtml(item.description)}</p>
+                                            </div>
+                                            <div class="flex justify-between items-center pt-2 border-t border-slate-200 text-[11px] text-slate-500">
+                                                <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
+                                                ${window.isAdmin ? `<button onclick="deleteItem('pinwand', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.submitPinwand = async function(e) {
+            e.preventDefault();
+            if (!window.userNickname) { openNicknameModal(); return; }
+            const category = document.getElementById('pin-category').value;
+            const title = document.getElementById('pin-title').value.trim();
+            const description = document.getElementById('pin-desc').value.trim();
+            if (!title || !description) return;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pinwand'), {
+                    category, title, description,
+                    nickname: window.userNickname,
+                    timestamp: Date.now()
+                });
+                document.getElementById('pin-title').value = '';
+                document.getElementById('pin-desc').value = '';
+                showToast("Anzeige auf Pin-wand veröffentlicht!");
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Erstellen", "error");
+            }
+        }
+
+        // 3. Schwarzes Brett View
+        function renderSchwarzesBrettView() {
+            const list = window.appData.schwarzesbrett || [];
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett</h2>
+                        <p class="text-xs text-slate-500 mb-6">Hier kann jeder frei etwas hinschreiben – wichtige Hinweise, Fundstücke oder Mitteilungen.</p>
+                        
+                        <form onsubmit="submitSchwarzesBrett(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel / Überschrift</label>
+                                <input type="text" id="sb-title" placeholder="z.B. Schlüsselbund gefunden..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nachricht</label>
+                                <textarea id="sb-desc" rows="4" placeholder="Schreibe deine Nachricht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                <i class="fa-solid fa-thumbtack mr-2"></i>Anheften
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-clipboard-list text-emerald-600 mr-2"></i>Alle Notizen (${list.length})</h2>
+                        <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Das Schwarze Brett ist leer.</p>' :
+                                list.map(item => `
+                                    <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/40 relative">
+                                        <div class="absolute top-3 right-3 text-amber-500"><i class="fa-solid fa-thumbtack"></i></div>
+                                        <h3 class="font-bold text-sm text-slate-900 mb-1">${escapeHtml(item.title)}</h3>
+                                        <p class="text-xs text-slate-700 mb-3 whitespace-pre-wrap">${escapeHtml(item.description)}</p>
+                                        <div class="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-amber-100">
+                                            <span>Von: <strong>${escapeHtml(item.nickname)}</strong> &bull; ${new Date(item.timestamp).toLocaleDateString()}</span>
+                                            ${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.submitSchwarzesBrett = async function(e) {
+            e.preventDefault();
+            if (!window.userNickname) { openNicknameModal(); return; }
+            const title = document.getElementById('sb-title').value.trim();
+            const description = document.getElementById('sb-desc').value.trim();
+            if (!title || !description) return;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'schwarzesbrett'), {
+                    title, description,
+                    nickname: window.userNickname,
+                    timestamp: Date.now()
+                });
+                document.getElementById('sb-title').value = '';
+                document.getElementById('sb-desc').value = '';
+                showToast("Notiz ans Schwarze Brett geheftet!");
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Erstellen", "error");
+            }
+        }
+
+        // 4. Hinwand (Nur Admin kann eintragen) View
+        function renderHinwandView() {
+            const list = window.appData.hinwand || [];
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    ${window.isAdmin ? `
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Hinwand (Admin)</h2>
+                            <p class="text-xs text-slate-500 mb-6">Hier darf ausschließlich der Admin offizielle Hinweise und Bekanntmachungen eintragen.</p>
+                            
+                            <form onsubmit="submitHinwand(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Überschrift</label>
+                                    <input type="text" id="hw-title" placeholder="z.B. Wichtige Dorfinformation..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Bekanntmachung</label>
+                                    <textarea id="hw-desc" rows="4" placeholder="Offizieller Text..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500 focus:outline-none bg-slate-50"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                    <i class="fa-solid fa-bullhorn mr-2"></i>Offiziell veröffentlichen
+                                </button>
+                            </form>
+                        </div>
+                    ` : `
+                        <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
+                            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xl mb-3">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-base mb-1">Hinwand (Admin-geschützt)</h3>
+                            <p class="text-xs text-slate-600 max-w-xs">Auf der Hinwand dürfen nur Administratoren offizielle Bekanntmachungen für das Dorf hinterlassen.</p>
+                        </div>
+                    `}
+
+                    <div class="${window.isAdmin ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-circle-info text-amber-600 mr-2"></i>Offizielle Bekanntmachungen (${list.length})</h2>
+                        <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Keine offiziellen Bekanntmachungen vorhanden.</p>' :
+                                list.map(item => `
+                                    <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50">
+                                        <div class="flex justify-between items-start mb-2">
+                                            <span class="text-xs bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold"><i class="fa-solid fa-shield-halved mr-1"></i>Offiziell</span>
+                                            <span class="text-xs text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</span>
+                                        </div>
+                                        <h3 class="font-bold text-base text-slate-900 mb-2">${escapeHtml(item.title)}</h3>
+                                        <p class="text-sm text-slate-700 whitespace-pre-wrap mb-3">${escapeHtml(item.description)}</p>
+                                        <div class="flex justify-between items-center pt-2 border-t border-amber-200/60 text-xs text-slate-500">
+                                            <span>Veröffentlicht vom Administrator</span>
+                                            ${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium">Löschen</button>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.submitHinwand = async function(e) {
+            e.preventDefault();
+            if (!window.isAdmin) return;
+            const title = document.getElementById('hw-title').value.trim();
+            const description = document.getElementById('hw-desc').value.trim();
+            if (!title || !description) return;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hinwand'), {
+                    title, description,
+                    timestamp: Date.now()
+                });
+                document.getElementById('hw-title').value = '';
+                document.getElementById('hw-desc').value = '';
+                showToast("Offizielle Hinwand-Nachricht veröffentlicht!");
+            } catch(e) {
+                console.error(e);
+                showToast("Fehler beim Veröffentlichen", "error");
+            }
+        }
+
+        // 5. Chat View
+        function renderChatView() {
+            const list = window.appData.chat || [];
+            list.sort((a,b) => a.timestamp - b.timestamp);
+
+            const activeNicknames = new Set();
+            window.appData.checkins.forEach(c => { if(c.nickname) activeNicknames.add(c.nickname); });
+            window.appData.chat.forEach(c => { if(c.nickname) activeNicknames.add(c.nickname); });
+            if(window.userNickname) activeNicknames.add(window.userNickname);
+
+            return `
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px]">
+                        <div class="flex justify-between items-center pb-3 border-b border-slate-100 mb-4">
+                            <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-comments text-emerald-600 mr-2"></i>Dorf-Chat</h2>
+                            <span class="text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full font-medium">
+                                <i class="fa-solid fa-circle text-[8px] text-emerald-500 mr-1 animate-pulse"></i>${activeNicknames.size} Personen online
+                            </span>
+                        </div>
+
+                        <!-- Chat Messages -->
+                        <div id="chat-messages-box" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-12 text-center">Noch keine Nachrichten im Chat. Schreib als Erste(r)!</p>' :
+                                list.map(item => {
+                                    const isSelf = item.nickname === window.userNickname;
+                                    return `
+                                        <div class="flex flex-col ${isSelf ? 'items-end' : 'items-start'}">
+                                            <div class="flex items-center space-x-1 mb-1">
+                                                <span class="text-xs font-bold text-slate-700">${escapeHtml(item.nickname)}</span>
+                                                <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                            </div>
+                                            <div class="p-3 rounded-2xl text-sm max-w-md ${isSelf ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}">
+                                                ${escapeHtml(item.message)}
+                                            </div>
+                                            ${window.isAdmin ? `<button onclick="deleteItem('chat', '${item.id}')" class="text-red-400 hover:text-red-600 text-[10px] mt-1">Löschen</button>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                        </div>
+
+                        <!-- Chat Input -->
+                        <form onsubmit="submitChatMessage(event)" class="flex gap-2 pt-2 border-t border-slate-100">
+                            <input type="text" id="chat-input" placeholder="Nachricht an das Dorf schreiben..." class="flex-1 text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50" autocomplete="off">
+                            <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 rounded-xl font-medium transition shadow-sm text-sm">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Chat Online Presence Sidebar -->
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px]">
+                        <h3 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-user-group text-emerald-600 mr-2"></i>Wer ist da? (${activeNicknames.size})</h3>
+                        <p class="text-xs text-slate-500 mb-4">Aktive Nicknames im Dorf:</p>
+                        <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+                            ${Array.from(activeNicknames).map(nick => `
+                                <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs">
+                                    <span class="font-medium text-slate-700 flex items-center">
+                                        <i class="fa-solid fa-circle text-[6px] text-emerald-500 mr-2"></i>${escapeHtml(nick)}
+                                    </span>
+                                    ${nick === window.userNickname ? '<span class="text-[10px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-semibold">Du</span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.submitChatMessage = async function(e) {
+            e.preventDefault();
+            if (!window.userNickname) { openNicknameModal(); return; }
+            const input = document.getElementById('chat-input');
+            if(!input) return;
+            const message = input.value.trim();
+            if (!message) return;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
+                    nickname: window.userNickname,
+                    message: message,
+                    timestamp: Date.now()
+                });
+                input.value = '';
+                setTimeout(() => {
+                    const chatBox = document.getElementById('chat-messages-box');
+                    if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
+                }, 100);
+            } catch(e) {
+                console.error("Chat send error:", e);
+                showToast("Fehler beim Senden", "error");
+            }
+        }
+
+        // 6. Terminkalender View (Google Calendar)
+        function renderKalenderView() {
+            return `
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Terminkalender</h2>
+                            <p class="text-xs text-slate-500">Google Terminkalender mit allen anstehenden Veranstaltungen.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="w-full h-[650px] rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
+                        <iframe src="https://calendar.google.com/calendar/embed?src=de.german%23holiday%45group.v.calendar.google.com&ctz=Europe%2FBerlin" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 7. Admin Bereich View
+        function renderAdminView() {
+            if (!window.isAdmin) {
+                return `<div class="p-8 text-center text-slate-500">Bitte zuerst im Admin-Bereich anmelden.</div>`;
+            }
+            return `
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-gears text-amber-500 mr-2"></i>Adminbereich & Steuerungszentrale</h2>
+                            <p class="text-xs text-slate-500">Besucherstatistik und globale Moderation: Sie können als Admin jeden Eintrag aus jedem Bereich löschen.</p>
+                        </div>
+                        <div class="bg-amber-50 border border-amber-200 px-6 py-4 rounded-xl flex items-center space-x-4">
+                            <div class="text-amber-600 text-2xl font-black">
+                                <i class="fa-solid fa-chart-line"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-amber-900">Besucher insgesamt</p>
+                                <p class="text-2xl font-black text-amber-700">${window.appData.visitors}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Checkins Moderation -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3"><i class="fa-solid fa-clipboard-check mr-2 text-emerald-600"></i>Check-Ins moderieren (${window.appData.checkins.length})</h3>
+                            <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                ${window.appData.checkins.length === 0 ? '<p class="text-xs text-slate-400 italic">Keine Check-ins vorhanden.</p>' :
+                                    window.appData.checkins.map(item => `
+                                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                            <div>
+                                                <strong>${escapeHtml(item.nickname)}</strong>: ${escapeHtml(item.status)}
+                                            </div>
+                                            <button onclick="deleteItem('checkins', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
+                                        </div>
+                                    `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Pin-wand Moderation -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3"><i class="fa-solid fa-signs-post mr-2 text-emerald-600"></i>Pin-wand moderieren (${window.appData.pinwand.length})</h3>
+                            <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                ${window.appData.pinwand.length === 0 ? '<p class="text-xs text-slate-400 italic">Keine Anzeigen vorhanden.</p>' :
+                                    window.appData.pinwand.map(item => `
+                                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                            <div>
+                                                <strong>[${escapeHtml(item.category)}] ${escapeHtml(item.title)}</strong> (${escapeHtml(item.nickname)})
+                                            </div>
+                                            <button onclick="deleteItem('pinwand', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
+                                        </div>
+                                    `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Schwarzes Brett Moderation -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3"><i class="fa-solid fa-note-sticky mr-2 text-emerald-600"></i>Schwarzes Brett moderieren (${window.appData.schwarzesbrett.length})</h3>
+                            <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                ${window.appData.schwarzesbrett.length === 0 ? '<p class="text-xs text-slate-400 italic">Keine Notizen vorhanden.</p>' :
+                                    window.appData.schwarzesbrett.map(item => `
+                                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                            <div>
+                                                <strong>${escapeHtml(item.title)}</strong> (${escapeHtml(item.nickname)})
+                                            </div>
+                                            <button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
+                                        </div>
+                                    `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Chat Moderation -->
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h3 class="font-bold text-sm text-slate-800 mb-3"><i class="fa-solid fa-comments mr-2 text-emerald-600"></i>Chat-Nachrichten moderieren (${window.appData.chat.length})</h3>
+                            <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
+                                ${window.appData.chat.length === 0 ? '<p class="text-xs text-slate-400 italic">Keine Chatnachrichten vorhanden.</p>' :
+                                    window.appData.chat.map(item => `
+                                        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                                            <div>
+                                                <strong>${escapeHtml(item.nickname)}</strong>: ${escapeHtml(item.message)}
+                                            </div>
+                                            <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
+                                        </div>
+                                    `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
 </body>
 </html>
+```
