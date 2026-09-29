@@ -4,8 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsere Dorf-App</title>
-    <!-- Tailwind CSS (CDN mitgeladen) -->
+    <title>Unsere Dorf-App mit Push & Live-Status</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
@@ -24,15 +23,15 @@
                 </div>
                 <div>
                     <h1 class="text-base font-bold tracking-tight">Dorf-Treffpunkt</h1>
-                    <p class="text-[11px] text-emerald-200">Zentral verbunden im Ort</p>
+                    <p id="admin-badge" class="text-[11px] text-emerald-200">Zentral verbunden im Ort</p>
                 </div>
             </div>
-            <!-- Navigation Tabs -->
             <nav class="flex space-x-1 mt-2 sm:mt-0 overflow-x-auto pb-1 sm:pb-0">
                 <button onclick="switchTab('feed')" id="btn-feed" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition bg-emerald-800 text-white shadow-xs">Pinnwand</button>
                 <button onclick="switchTab('chat')" id="btn-chat" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Dorf-Chat</button>
                 <button onclick="switchTab('marketplace')" id="btn-marketplace" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Suche & Biete</button>
                 <button onclick="switchTab('events')" id="btn-events" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">Termine</button>
+                <button onclick="switchTab('settings')" id="btn-settings" class="tab-btn px-3 py-1.5 rounded-lg text-xs font-medium transition text-emerald-100 hover:bg-emerald-600">🔔 Push & Admin</button>
             </nav>
         </div>
     </header>
@@ -45,7 +44,7 @@
                 <div class="relative z-10 max-w-2xl">
                     <span class="bg-emerald-500/80 text-emerald-50 text-[10px] font-semibold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Echtzeit-Dorfnetzwerk</span>
                     <h2 class="text-xl sm:text-2xl font-bold mt-1.5">Willkommen in unserer vernetzten Dorfgemeinschaft!</h2>
-                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Alle Beiträge, Chatnachrichten und Kleinanzeigen sind jetzt für alle Dorfbewohner in Echtzeit synchronisiert.</p>
+                    <p class="mt-1.5 text-emerald-100 text-xs sm:text-sm leading-relaxed">Hier finden Sie alle Neuigkeiten und Sparten. Aktivieren Sie Push-Benachrichtigungen, um keine Änderung zu verpassen.</p>
                 </div>
             </div>
 
@@ -53,7 +52,7 @@
                 <div class="md:col-span-2 space-y-3">
                     <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
                         <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
-                        Orts-Nachrichten
+                        Orts-Nachrichten & Sparten
                     </h3>
                     <div id="news-container" class="space-y-3"></div>
                 </div>
@@ -71,11 +70,16 @@
                         </div>
                     </div>
 
+                    <div id="admin-counter-box" class="bg-amber-50 rounded-2xl p-4 border border-amber-200 hidden">
+                        <h4 class="font-bold text-amber-900 mb-1 text-xs">🔒 Admin-Besucherzähler</h4>
+                        <p class="text-[11px] text-amber-800">
+                            Bisherige App-Besucher: <strong id="visitor-count" class="text-amber-950 text-sm">...</strong>
+                        </p>
+                    </div>
+
                     <div class="bg-emerald-50 rounded-2xl p-4 border border-emerald-100">
                         <h4 class="font-bold text-emerald-900 mb-1 text-xs">🟢 Live-Status</h4>
-                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">
-                            Verbindung zur Cloud wird aufgebaut...
-                        </p>
+                        <p id="sync-status" class="text-[11px] text-emerald-800 leading-relaxed">Verbindung zur Cloud wird aufgebaut...</p>
                     </div>
                 </div>
             </div>
@@ -83,21 +87,25 @@
 
         <!-- 2. CHAT BEREICH -->
         <section id="section-chat" class="tab-content hidden flex flex-col h-[70vh] bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
-            <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+            <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                     <h3 class="font-bold text-sm text-slate-800">Dorf-Plausch (Live)</h3>
-                    <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen Teilnehmern</p>
+                    <p class="text-[11px] text-slate-500">Nachrichten erscheinen sofort bei allen</p>
                 </div>
-                <div class="flex items-center space-x-1.5">
-                    <span id="chat-dot" class="inline-block w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                    <span id="chat-status-text" class="text-[11px] font-medium text-slate-600">Verbinde...</span>
+                <div class="flex items-center gap-3">
+                    <!-- Wer ist im Chat online Anzeige -->
+                    <div class="bg-white px-3 py-1 rounded-xl border border-slate-200 shadow-2xs text-[11px] flex items-center gap-1.5">
+                        <span class="inline-block w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                        <span class="text-slate-600 font-medium">Online im Chat:</span>
+                        <span id="online-users-count" class="font-bold text-emerald-700">1</span>
+                    </div>
                 </div>
             </div>
 
             <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-2.5 bg-slate-50/40"></div>
 
             <form id="chat-form" onsubmit="handleChatSubmit(event)" class="p-2.5 bg-white border-t border-slate-200 flex gap-2">
-                <input type="text" id="chat-author" placeholder="Ihr Name" class="w-1/3 sm:w-1/4 px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
+                <input type="text" id="chat-author" placeholder="Ihr Name" oninput="updateChatPresence()" class="w-1/3 sm:w-1/4 px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
                 <input type="text" id="chat-input" placeholder="Nachricht schreiben..." class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500" required>
                 <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Senden</button>
             </form>
@@ -108,7 +116,7 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
                 <div>
                     <h3 class="text-base font-bold text-slate-800">Schwarzes Brett: Suche & Biete</h3>
-                    <p class="text-[11px] text-slate-500">Zentrale Kleinanzeigen für alle im Ort</p>
+                    <p class="text-[11px] text-slate-500">Zentrale Kleinanzeigen (Sparte: Marktplatz)</p>
                 </div>
                 <div class="flex gap-2 w-full sm:w-auto">
                     <select id="market-filter" onchange="renderMarketplace()" class="text-xs px-3 py-1.5 rounded-xl border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
@@ -119,7 +127,6 @@
                     <button onclick="openModal('market-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs whitespace-nowrap">+ Anzeige</button>
                 </div>
             </div>
-
             <div id="market-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"></div>
         </section>
 
@@ -128,12 +135,56 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl shadow-xs border border-slate-200">
                 <div>
                     <h3 class="text-base font-bold text-slate-800">Dorf-Termine & Veranstaltungen</h3>
-                    <p class="text-[11px] text-slate-500">Gemeinsame Termine für das ganze Dorf</p>
+                    <p class="text-[11px] text-slate-500">Gemeinsame Termine (Sparte: Termine)</p>
                 </div>
                 <button onclick="openModal('event-modal')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">+ Termin</button>
             </div>
-
             <div id="events-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+        </section>
+
+        <!-- 5. PUSH & ADMIN EINSTELLUNGEN -->
+        <section id="section-settings" class="tab-content hidden space-y-4 max-w-xl mx-auto w-full">
+            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    🔔 Push-Benachrichtigungen nach Sparten
+                </h3>
+                <p class="text-xs text-slate-600">Wählen Sie aus, für welche Sparten Sie eine Benachrichtigung (Push-Hinweis) erhalten möchten, sobald sich dort etwas ändert.</p>
+                
+                <div class="space-y-3 pt-2">
+                    <button onclick="requestPushPermission()" id="push-perm-btn" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold py-2 px-4 rounded-xl text-xs transition border border-slate-300">
+                        Browser-Benachrichtigungen erlauben
+                    </button>
+
+                    <div class="space-y-2 pt-2 border-t border-slate-100">
+                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
+                            <span class="text-xs font-medium text-slate-700">📢 Alle Dorfnachrichten & Bekanntmachungen</span>
+                            <input type="checkbox" id="sub-news" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                        </label>
+                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
+                            <span class="text-xs font-medium text-slate-700">🛒 Schwarzes Brett (Suche & Biete)</span>
+                            <input type="checkbox" id="sub-market" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                        </label>
+                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
+                            <span class="text-xs font-medium text-slate-700">📅 Termine & Veranstaltungen</span>
+                            <input type="checkbox" id="sub-events" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                        </label>
+                        <label class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100">
+                            <span class="text-xs font-medium text-slate-700">💬 Dorf-Chat Aktivitäten</span>
+                            <input type="checkbox" id="sub-chat" onchange="saveSubscriptions()" class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 space-y-3">
+                <h3 class="text-base font-bold text-slate-800">🔐 Admin-Bereich</h3>
+                <p class="text-xs text-slate-600">Geben Sie das Admin-Passwort ein, um den Besucherzähler einzusehen.</p>
+                <div class="flex gap-2">
+                    <input type="password" id="admin-pass-input" placeholder="Admin-Passwort (z.B. dorf123)" class="flex-grow px-3 py-1.5 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <button onclick="checkAdminLogin()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-xl text-xs font-semibold transition shadow-xs">Entsperren</button>
+                </div>
+                <p id="admin-msg" class="text-[11px] text-slate-500"></p>
+            </div>
         </section>
 
     </main>
@@ -163,7 +214,7 @@
                 </div>
                 <div>
                     <label class="block font-medium text-slate-700 mb-1">Kontakt</label>
-                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller, Tel. 1234" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
+                    <input type="text" id="m-contact" placeholder="z.B. Familie Müller" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 focus:ring-1 focus:ring-emerald-500" required>
                 </div>
                 <div class="flex justify-end gap-2 pt-1">
                     <button type="button" onclick="closeModal('market-modal')" class="px-3 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-medium">Abbrechen</button>
@@ -207,49 +258,40 @@
         </div>
     </div>
 
-    <!-- Firebase SDK Imports -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Fallback Config falls außerhalb der Testumgebung aufgerufen
-        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v1';
+        const appId = (typeof __app_id !== 'undefined' && __app_id) ? __app_id : 'dorfapp-shared-v2';
         let firebaseConfig = {};
-        
         try {
             if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                 firebaseConfig = JSON.parse(__firebase_config);
             }
-        } catch(e) {
-            console.error("Config Parse Fehler:", e);
-        }
+        } catch(e) {}
 
-        // Öffentliche Demo-Konfiguration als Fallback für GitHub Pages, falls keine Umgebungsvariable existiert
         if (!firebaseConfig.apiKey) {
-            firebaseConfig = {
-                apiKey: "AIzaSyDorfAppPublicFallbackKey12345",
-                authDomain: "dorfapp.firebaseapp.com",
-                projectId: "dorfapp-shared"
-            };
+            firebaseConfig = { apiKey: "AIzaSyDorfAppPublicFallbackKey12345", authDomain: "dorfapp.firebaseapp.com", projectId: "dorfapp-shared" };
         }
 
-        let db, auth;
+        let db, auth, userId = 'user_' + Math.random().toString(36.substring(2, 9));
         try {
             const app = initializeApp(firebaseConfig);
             db = getFirestore(app);
             auth = getAuth(app);
-        } catch (e) {
-            console.error("Firebase Init Fehler:", e);
-        }
+        } catch (e) {}
 
         let chatMessages = [];
         let marketItems = [];
         let eventItems = [];
         let newsItems = [
-            { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen." },
-            { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!" }
+            { title: "Glasfaserausbau startet im nächsten Quartal", date: "27.03.2026", text: "Die Gemeinde hat heute den Vertrag unterzeichnet. Ab Mai beginnen die Begehungen.", category: "news" },
+            { title: "Neuer Spielplatz am Sportplatz eröffnet", date: "20.03.2026", text: "Der neue Kletterturm ist freigegeben. Danke an alle freiwilligen Helfer!", category: "news" }
         ];
+
+        let subscriptions = JSON.parse(localStorage.getItem('dorf_subs') || '{"news":true, "market":true, "events":true, "chat":false}');
+        let isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
 
         window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
@@ -263,9 +305,7 @@
             activeBtn.classList.add('bg-emerald-800', 'text-white', 'shadow-xs');
             activeBtn.classList.remove('text-emerald-100', 'hover:bg-emerald-600');
 
-            if(tabId === 'chat') {
-                scrollToBottom();
-            }
+            if(tabId === 'chat') scrollToBottom();
         }
 
         window.openModal = function(id) { document.getElementById(id).classList.remove('hidden'); }
@@ -279,6 +319,129 @@
         function escapeHtml(str) {
             if(!str) return '';
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // Push Benachrichtigungen verwalten
+        window.requestPushPermission = async function() {
+            if (!('Notification' in window)) {
+                alert("Ihr Browser unterstützt keine Push-Benachrichtigungen.");
+                return;
+            }
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
+                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
+                new Notification("Dorf-App", { body: "Push-Benachrichtigungen wurden erfolgreich aktiviert!" });
+            } else {
+                alert("Benachrichtigungen wurden blockiert.");
+            }
+        }
+
+        window.saveSubscriptions = function() {
+            subscriptions.news = document.getElementById('sub-news').checked;
+            subscriptions.market = document.getElementById('sub-market').checked;
+            subscriptions.events = document.getElementById('sub-events').checked;
+            subscriptions.chat = document.getElementById('sub-chat').checked;
+            localStorage.setItem('dorf_subs', JSON.stringify(subscriptions));
+        }
+
+        function triggerPush(category, title, bodyText) {
+            if (!subscriptions[category]) return;
+            if (Notification.permission === 'granted') {
+                new Notification("Dorf-Update: " + title, { body: bodyText });
+            }
+        }
+
+        // Admin Logik & Besucherzähler
+        window.checkAdminLogin = function() {
+            const pass = document.getElementById('admin-pass-input').value;
+            if (pass === 'dorf123' || pass === 'admin') {
+                isAdmin = true;
+                localStorage.setItem('dorf_is_admin', 'true');
+                document.getElementById('admin-msg').textContent = "Admin-Modus erfolgreich aktiviert!";
+                document.getElementById('admin-msg').className = "text-[11px] text-emerald-600 font-bold";
+                applyAdminUI();
+            } else {
+                document.getElementById('admin-msg').textContent = "Falsches Passwort!";
+                document.getElementById('admin-msg').className = "text-[11px] text-red-600 font-bold";
+            }
+        }
+
+        function applyAdminUI() {
+            if (isAdmin) {
+                document.getElementById('admin-counter-box').classList.remove('hidden');
+                document.getElementById('admin-badge').textContent = "Modus: Administrator 🔒";
+            }
+        }
+
+        async function registerVisitor() {
+            if (!db) return;
+            try {
+                const visitorRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
+                const snap = await getDoc(visitorRef);
+                let count = 1;
+                if (snap.exists()) {
+                    const data = snap.data();
+                    const visitorsList = data.list || [];
+                    if (!visitorsList.includes(userId)) {
+                        visitorsList.push(userId);
+                        count = visitorsList.length;
+                        await updateDoc(visitorRef, { count, list: visitorsList });
+                    } else {
+                        count = visitorsList.length;
+                    }
+                } else {
+                    await setDoc(visitorRef, { count: 1, list: [userId] });
+                }
+                document.getElementById('visitor-count').textContent = count;
+            } catch (e) {
+                document.getElementById('visitor-count').textContent = "1 (Lokal)";
+            }
+        }
+
+        // Chat Presence (Wer ist online im Chat)
+        window.updateChatPresence = async function() {
+            const name = document.getElementById('chat-author').value.trim() || "Anonym";
+            if (!db) return;
+            try {
+                const presenceRef = doc(db, 'artifacts', appId, 'public', 'data', 'presence', userId);
+                await setDoc(presenceRef, {
+                    name: name,
+                    lastSeen: Date.now()
+                }, { merge: true });
+            } catch(e) {}
+        }
+
+        function listenOnlineUsers() {
+            if (!db) return;
+            onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'presence')), (snapshot) => {
+                let onlineCount = 0;
+                const now = Date.now();
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    // Wenn innerhalb der letzten 30 Sekunden aktiv
+                    if (data.lastSeen && (now - data.lastSeen < 30000)) {
+                        onlineCount++;
+                    }
+                });
+                document.getElementById('online-users-count').textContent = Math.max(1, onlineCount);
+            });
+        }
+
+        // Render Funktionen
+        function renderNews() {
+            const container = document.getElementById('news-container');
+            if(!container) return;
+            container.innerHTML = newsItems.map(n => `
+                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
+                        <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
+                    </div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
+                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
+                </div>
+            `).join('');
         }
 
         function renderChat() {
@@ -300,28 +463,20 @@
             e.preventDefault();
             const author = document.getElementById('chat-author').value;
             const text = document.getElementById('chat-input').value;
+            const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             
             try {
-                if(!db) throw new Error("Keine Datenbank verbunden");
-                const chatCol = collection(db, 'artifacts', appId, 'public', 'data', 'chat');
-                await addDoc(chatCol, {
-                    author,
-                    text,
-                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
-                    createdAt: Date.now()
+                if(!db) throw new Error();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), {
+                    author, text, time, createdAt: Date.now()
                 });
                 document.getElementById('chat-input').value = '';
+                triggerPush('chat', author, text);
             } catch (err) {
-                console.error("Fehler beim Senden:", err);
-                // Fallback lokal hinzufügen falls offline
-                chatMessages.push({
-                    author,
-                    text,
-                    time: new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }),
-                    createdAt: Date.now()
-                });
+                chatMessages.push({ author, text, time, createdAt: Date.now() });
                 renderChat();
                 document.getElementById('chat-input').value = '';
+                triggerPush('chat', author, text);
             }
         }
 
@@ -354,26 +509,22 @@
             const title = document.getElementById('m-title').value;
             const desc = document.getElementById('m-desc').value;
             const contact = document.getElementById('m-contact').value;
+            const date = new Date().toLocaleDateString('de-DE');
 
             try {
-                if(!db) throw new Error("Keine Datenbank");
-                const marketCol = collection(db, 'artifacts', appId, 'public', 'data', 'marketplace');
-                await addDoc(marketCol, {
-                    type,
-                    title,
-                    desc,
-                    contact,
-                    date: new Date().toLocaleDateString('de-DE'),
-                    createdAt: Date.now()
+                if(!db) throw new Error();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace'), {
+                    type, title, desc, contact, date, createdAt: Date.now()
                 });
-                document.getElementById('market-form').reset();
                 closeModal('market-modal');
+                document.getElementById('market-form').reset();
+                triggerPush('market', type + ': ' + title, desc);
             } catch (err) {
-                console.error("Fehler Kleinanzeige:", err);
-                marketItems.unshift({ type, title, desc, contact, date: new Date().toLocaleDateString('de-DE'), createdAt: Date.now() });
+                marketItems.unshift({ type, title, desc, contact, date, createdAt: Date.now() });
                 renderMarketplace();
-                document.getElementById('market-form').reset();
                 closeModal('market-modal');
+                document.getElementById('market-form').reset();
+                triggerPush('market', type + ': ' + title, desc);
             }
         }
 
@@ -409,42 +560,36 @@
             }
 
             try {
-                if(!db) throw new Error("Keine Datenbank");
-                const eventsCol = collection(db, 'artifacts', appId, 'public', 'data', 'events');
-                await addDoc(eventsCol, {
-                    title,
-                    date: formattedDate,
-                    time,
-                    location,
-                    createdAt: Date.now()
+                if(!db) throw new Error();
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'events'), {
+                    title, date: formattedDate, time, location, createdAt: Date.now()
                 });
-                document.getElementById('event-form').reset();
                 closeModal('event-modal');
+                document.getElementById('event-form').reset();
+                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
             } catch (err) {
-                console.error("Fehler Termin:", err);
                 eventItems.push({ title, date: formattedDate, time, location, createdAt: Date.now() });
                 renderEvents();
-                document.getElementById('event-form').reset();
                 closeModal('event-modal');
+                document.getElementById('event-form').reset();
+                triggerPush('events', title, `Am ${formattedDate} um ${time} Uhr in ${location}`);
             }
         }
 
-        function renderNews() {
-            const container = document.getElementById('news-container');
-            if(!container) return;
-            container.innerHTML = newsItems.map(n => `
-                <div class="bg-white rounded-2xl p-4 shadow-xs border border-slate-200">
-                    <div class="flex justify-between items-center mb-1">
-                        <span class="text-[10px] font-semibold text-emerald-600">Bekanntmachung</span>
-                        <span class="text-[9px] text-slate-400">${escapeHtml(n.date)}</span>
-                    </div>
-                    <h4 class="font-bold text-slate-800 text-sm mb-1">${escapeHtml(n.title)}</h4>
-                    <p class="text-xs text-slate-600 leading-relaxed">${escapeHtml(n.text)}</p>
-                </div>
-            `).join('');
-        }
-
         async function initApp() {
+            // UI Checkboxen mit gespeicherten Abos füttern
+            document.getElementById('sub-news').checked = subscriptions.news;
+            document.getElementById('sub-market').checked = subscriptions.market;
+            document.getElementById('sub-events').checked = subscriptions.events;
+            document.getElementById('sub-chat').checked = subscriptions.chat;
+
+            if (Notification.permission === 'granted') {
+                document.getElementById('push-perm-btn').textContent = "✅ Benachrichtigungen aktiv";
+                document.getElementById('push-perm-btn').classList.add('bg-emerald-100', 'text-emerald-800');
+            }
+
+            if (isAdmin) applyAdminUI();
+
             try {
                 if (auth) {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -454,43 +599,40 @@
                     }
                 }
 
-                document.getElementById('sync-status').textContent = "Echtzeit-Verbindung aktiv. Alle Daten werden zentral synchronisiert.";
-                document.getElementById('chat-dot').classList.remove('bg-amber-500');
-                document.getElementById('chat-dot').classList.add('bg-emerald-500');
-                document.getElementById('chat-status-text').textContent = "Verbunden";
+                document.getElementById('sync-status').textContent = "Echtzeit-Verbindung aktiv.";
+                
+                registerVisitor();
+                listenOnlineUsers();
+
+                // Ping Presence alle 10 Sekunden
+                setInterval(() => {
+                    updateChatPresence();
+                }, 10000);
 
                 if(db) {
-                    // Live-Listener Chat
                     onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'chat')), (snapshot) => {
                         chatMessages = [];
                         snapshot.forEach(docSnap => chatMessages.push({ id: docSnap.id, ...docSnap.data() }));
                         chatMessages.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
                         renderChat();
-                    }, (err) => console.log("Chat sync note:", err));
+                    });
 
-                    // Live-Listener Markt
                     onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'marketplace')), (snapshot) => {
                         marketItems = [];
                         snapshot.forEach(docSnap => marketItems.push({ id: docSnap.id, ...docSnap.data() }));
                         marketItems.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                         renderMarketplace();
-                    }, (err) => console.log("Market sync note:", err));
+                    });
 
-                    // Live-Listener Termine
                     onSnapshot(query(collection(db, 'artifacts', appId, 'public', 'data', 'events')), (snapshot) => {
                         eventItems = [];
                         snapshot.forEach(docSnap => eventItems.push({ id: docSnap.id, ...docSnap.data() }));
                         eventItems.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
                         renderEvents();
-                    }, (err) => console.log("Event sync note:", err));
+                    });
                 }
-
             } catch (err) {
-                console.error("Auth/Cloud Hinweis:", err);
-                document.getElementById('sync-status').textContent = "Lokaler Modus aktiv (Bereit)";
-                document.getElementById('chat-dot').classList.remove('bg-amber-500');
-                document.getElementById('chat-dot').classList.add('bg-blue-500');
-                document.getElementById('chat-status-text').textContent = "Bereit";
+                document.getElementById('sync-status').textContent = "Lokaler Modus aktiv.";
                 renderChat();
                 renderMarketplace();
                 renderEvents();
