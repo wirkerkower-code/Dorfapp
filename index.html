@@ -111,7 +111,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Ihr offizielles Firebase Konfigurationsobjekt
+        // Ihr offizielle Firebase Konfiguration
         const firebaseConfig = {
             apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
             authDomain: "dorfapp-2c48f.firebaseapp.com",
@@ -164,7 +164,7 @@
         }
 
         window.showFirebaseHelp = function() {
-            alert("HINWEIS ZU FIREBASE REGELN:\nFalls oben ein Sicherheitsfehler steht, gehen Sie in Ihre Firebase-Konsole (console.firebase.google.com) zu Ihrem Projekt 'dorfapp-2c48f', öffnen Sie 'Firestore Database' -> 'Regeln' (Rules) und setzen Sie diese auf Testmodus:\n\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}");
+            alert("DIAGNOSE & FIREBASE HINWEISE:\n\n1. Stellen Sie sicher, dass in Ihrer Firebase Console (console.firebase.google.com) unter 'Firestore Database' -> 'Regeln' (Rules) exakt folgendes steht:\n\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}\n\n2. Falls dort noch 'allow read, write: if false;' stand, speichern Sie die Regeln neu und laden Sie diese Seite im Editor einmal neu (Vorschau aktualisieren).");
         }
 
         // Toast Helper
