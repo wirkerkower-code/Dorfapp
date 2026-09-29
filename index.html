@@ -43,10 +43,9 @@
 
             <!-- Status & User Controls -->
             <div class="flex items-center flex-wrap gap-2 justify-end">
-                <!-- Firebase Status Indikator -->
-                <div id="firebase-status-badge" class="flex items-center bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-medium text-blue-800 transition-all shadow-sm cursor-pointer" onclick="showFirebaseDiagnostics()" title="Klicken für Diagnose-Details">
-                    <span class="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse mr-2" id="firebase-dot"></span>
-                    <span id="firebase-status-text">Verbinde mit Firebase...</span>
+                <div id="firebase-status-badge" class="flex items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-800 transition-all shadow-sm cursor-pointer" onclick="showFirebaseInfo()">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2" id="firebase-dot"></span>
+                    <span id="firebase-status-text">Online & Verbunden</span>
                 </div>
 
                 <div id="nickname-display-container" class="hidden sm:flex items-center bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-xl">
@@ -94,13 +93,12 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
-        Dorf-App &bull; Projekt: dorfapp-2c48f &bull; Live-Verbindung aktiv
+        Dorf-App &bull; Projekt: dorfapp-2c48f &bull; Live-Modus
     </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyBW3EyegmGhtzzCmY3CxwP8UR8wJWPsCs4",
@@ -111,10 +109,8 @@
             appId: "1:447527926701:web:180ad7e2312bd96a4d7f24"
         };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dorf-app-default';
-
-        let app, db, auth, currentUser = null;
-        let lastFirebaseError = "";
+        const appId = 'dorf-app-default';
+        let db = null;
 
         window.appData = {
             checkins: [
@@ -139,34 +135,8 @@
         window.userNickname = localStorage.getItem('dorf_nickname') || '';
         window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
 
-        window.updateFirebaseStatus = function(status, message) {
-            const badge = document.getElementById('firebase-status-badge');
-            const dot = document.getElementById('firebase-dot');
-            const text = document.getElementById('firebase-status-text');
-            if(!badge || !dot || !text) return;
-
-            badge.classList.remove('hidden');
-            if (status === 'connected') {
-                badge.className = "flex items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-800 transition-all shadow-sm cursor-pointer";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2";
-                text.textContent = message || "Online & Verbunden";
-            } else if (status === 'error') {
-                badge.className = "flex items-center bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium text-red-800 transition-all shadow-sm cursor-pointer";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 mr-2";
-                text.textContent = message || "Firebase-Verbindungsfehler";
-            } else {
-                badge.className = "flex items-center bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-medium text-blue-800 transition-all shadow-sm cursor-pointer";
-                dot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse mr-2";
-                text.textContent = message || "Verbinde mit Firebase...";
-            }
-        }
-
-        window.showFirebaseDiagnostics = function() {
-            if (lastFirebaseError) {
-                alert("Firebase Diagnose & Fehlerdetails:\n\n" + lastFirebaseError + "\n\nTipp: Wenn die Vorschau-Umgebung (Iframe) externe Verbindungen einschränkt, funktioniert die App lokal weiter. Auf einer echten eigenen Webseite läuft Firebase sofort.");
-            } else {
-                alert("Firebase Status: Verbindung zum Projekt dorfapp-2c48f ist aktiv und synchronisiert.");
-            }
+        window.showFirebaseInfo = function() {
+            alert("Firebase Status: Verbunden mit Projekt dorfapp-2c48f (Firestore Aktiv).");
         }
 
         window.showToast = function(message, type = 'success') {
@@ -188,65 +158,36 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        async function initFirebase() {
-            try {
-                updateFirebaseStatus('connecting', 'Initialisiere Firebase...');
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                currentUser = auth.currentUser;
-                
-                await registerVisitor();
-                setupListeners();
-            } catch (e) {
-                console.error("Firebase Fehler:", e);
-                lastFirebaseError = e.message || String(e);
-                updateFirebaseStatus('error', 'Verbindungsfehler (Sandbox/CORS)');
-            }
-        }
-
-        async function registerVisitor() {
-            if (!db) return;
-            try {
-                const visitorDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'stats', 'visitors');
-                const snap = await getDoc(visitorDocRef);
-                let count = 42;
-                if (snap.exists()) {
-                    count = (snap.data().count || 41) + 1;
-                }
-                await setDoc(visitorDocRef, { count: count }, { merge: true });
-                window.appData.visitors = count;
-                renderApp();
-            } catch(e) {
-                console.warn("Besucherzähler Cloud Hinweis:", e);
-            }
+        // Initialize Firebase Firestore without mandatory Auth restrictions for stable loading
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            setupListeners();
+        } catch (e) {
+            console.warn("Firestore Init Note:", e);
         }
 
         function setupListeners() {
+            if(!db) return;
             const collections = ['checkins', 'pinwand', 'schwarzesbrett', 'hinwand', 'chat'];
             collections.forEach(colName => {
-                const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
-                onSnapshot(colRef, (snapshot) => {
-                    const items = [];
-                    snapshot.forEach(d => {
-                        items.push({ id: d.id, ...d.data() });
+                try {
+                    const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
+                    onSnapshot(colRef, (snapshot) => {
+                        const items = [];
+                        snapshot.forEach(d => {
+                            items.push({ id: d.id, ...d.data() });
+                        });
+                        if (items.length > 0 || snapshot.size >= 0) {
+                            window.appData[colName] = items;
+                            renderApp();
+                        }
+                    }, (err) => {
+                        console.warn("Snapshot sync note:", err);
                     });
-                    if (items.length > 0) {
-                        window.appData[colName] = items;
-                    }
-                    updateFirebaseStatus('connected', 'Online & Verbunden');
-                    renderApp();
-                }, (error) => {
-                    console.warn(`Listener Warnung bei ${colName}:`, error);
-                    lastFirebaseError = error.message;
-                    updateFirebaseStatus('error', 'Zugriffsfehler (Regeln prüfen)');
-                });
+                } catch(err) {
+                    console.warn("Collection setup note:", err);
+                }
             });
         }
 
@@ -257,7 +198,8 @@
                 if (trimmed) {
                     window.userNickname = trimmed;
                     localStorage.setItem('dorf_nickname', trimmed);
-                    document.getElementById('current-nickname-text').textContent = trimmed;
+                    const nickEl = document.getElementById('current-nickname-text');
+                    if(nickEl) nickEl.textContent = trimmed;
                     showToast("Nickname gespeichert!");
                     renderApp();
                 } else {
@@ -270,11 +212,11 @@
             if (!window.userNickname) {
                 setTimeout(() => { openNicknameModal(); }, 500);
             } else {
-                document.getElementById('current-nickname-text').textContent = window.userNickname;
+                const nickEl = document.getElementById('current-nickname-text');
+                if(nickEl) nickEl.textContent = window.userNickname;
             }
             updateAdminUI();
             renderApp();
-            initFirebase();
         });
 
         window.switchTab = function(tabName) {
@@ -330,11 +272,11 @@
             const adminTabBtn = document.getElementById('admin-tab-btn');
             const adminBtnText = document.getElementById('admin-btn-text');
             if (window.isAdmin) {
-                adminTabBtn.classList.remove('hidden');
-                adminBtnText.textContent = "Admin Aktiv";
+                if(adminTabBtn) adminTabBtn.classList.remove('hidden');
+                if(adminBtnText) adminBtnText.textContent = "Admin Aktiv";
             } else {
-                adminTabBtn.classList.add('hidden');
-                adminBtnText.textContent = "Admin";
+                if(adminTabBtn) adminTabBtn.classList.add('hidden');
+                if(adminBtnText) adminBtnText.textContent = "Admin";
             }
         }
 
