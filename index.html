@@ -19,6 +19,7 @@
 
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
+    <!-- Admin Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
             <h3 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-lock text-emerald-600 mr-2"></i>Admin-Bereich entsperren</h3>
@@ -31,6 +32,7 @@
         </div>
     </div>
 
+    <!-- Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -43,10 +45,10 @@
                 </div>
             </div>
 
-            <!-- Nickname & Admin Status -->
+            <!-- Status & User Controls -->
             <div class="flex items-center flex-wrap gap-2 justify-end">
-                <!-- Detaillierter Firebase Status Indikator -->
-                <div id="firebase-status-badge" class="flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm" title="Firebase Status">
+                <!-- Präziser Firebase Status Indikator -->
+                <div id="firebase-status-badge" class="flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm cursor-pointer" onclick="showFirebaseHelp()" title="Klicken für Hilfe bei Firebase-Regeln">
                     <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse mr-2" id="firebase-dot"></span>
                     <span id="firebase-status-text">Verbinde mit Firebase...</span>
                 </div>
@@ -103,6 +105,7 @@
         Dorf-App &bull; Alle Daten und Aktivitäten im Überblick
     </footer>
 
+    <!-- Firebase Script & Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
@@ -134,8 +137,7 @@
         window.userNickname = localStorage.getItem('dorf_nickname') || '';
         window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
 
-        // Präzise Status-Anzeige für Verbindung vs. Sicherheitsproblem / Zugriffsrechte
-        function updateFirebaseStatus(status, message) {
+        window.updateFirebaseStatus = function(status, message) {
             const badge = document.getElementById('firebase-status-badge');
             const dot = document.getElementById('firebase-dot');
             const text = document.getElementById('firebase-status-text');
@@ -143,23 +145,26 @@
 
             badge.classList.remove('hidden');
             if (status === 'connected') {
-                badge.className = "flex items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-800 transition-all shadow-sm";
+                badge.className = "flex items-center bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl text-xs font-medium text-emerald-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 mr-2";
                 text.textContent = message || "Online & Verbunden";
             } else if (status === 'security_error') {
-                // Konkreter Hinweis auf Sicherheitsproblem / Firestore Security Rules
-                badge.className = "flex items-center bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium text-red-800 transition-all shadow-sm";
+                badge.className = "flex items-center bg-red-50 border border-red-200 px-3 py-1.5 rounded-xl text-xs font-medium text-red-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-red-600 mr-2";
-                text.textContent = message || "Sicherheitsproblem: Keine Zugriffsrechte (Firestore Rules prüfen)";
+                text.textContent = message || "Sicherheitsproblem: Firestore Regeln blockieren Zugriff";
             } else if (status === 'error') {
-                badge.className = "flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm";
+                badge.className = "flex items-center bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-medium text-amber-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-amber-500 mr-2";
-                text.textContent = message || "Keine Verbindung zu Firebase";
+                text.textContent = message || "Verbindungsfehler zu Firebase";
             } else {
-                badge.className = "flex items-center bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-medium text-blue-800 transition-all shadow-sm";
+                badge.className = "flex items-center bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-medium text-blue-800 transition-all shadow-sm cursor-pointer";
                 dot.className = "w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse mr-2";
                 text.textContent = message || "Verbinde mit Firebase...";
             }
+        }
+
+        window.showFirebaseHelp = function() {
+            alert("HINWEIS ZU FIREBASE REGELN:\nFalls oben ein Sicherheitsfehler steht, gehen Sie in Ihre Firebase-Konsole (console.firebase.google.com) zu Ihrem Projekt 'dorfapp-2c48f', öffnen Sie 'Firestore Database' -> 'Regeln' (Rules) und setzen Sie diese auf Testmodus:\n\nrules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n    match /{document=**} {\n      allow read, write: if true;\n    }\n  }\n}");
         }
 
         // Toast Helper
@@ -183,7 +188,6 @@
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Initialize Firebase
         async function initFirebase() {
             try {
                 updateFirebaseStatus('connecting', 'Initialisiere Firebase...');
@@ -198,7 +202,7 @@
                 }
                 currentUser = auth.currentUser;
                 
-                // Besucherzähler erhöhen
+                // Besucherzähler testen und erhöhen
                 await registerVisitor();
 
                 // Live Listeners starten
@@ -224,7 +228,7 @@
             } catch(e) {
                 console.error("Besucherzähler Zugriffsfehler:", e);
                 if (e.code === 'permission-denied' || (e.message && e.message.includes('permission'))) {
-                    updateFirebaseStatus('security_error', 'Sicherheitsproblem: Keine Schreibrechte (Firestore Rules verweigert)');
+                    updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore Regeln verweigern Zugriff');
                 } else {
                     updateFirebaseStatus('error', 'Fehler beim Laden der Besucherdaten');
                 }
@@ -246,7 +250,7 @@
                 }, (error) => {
                     console.error(`Fehler bei ${colName}:`, error);
                     if (error.code === 'permission-denied' || (error.message && error.message.includes('permission'))) {
-                        updateFirebaseStatus('security_error', 'Sicherheitsproblem: Zugriffsrechte verweigert');
+                        updateFirebaseStatus('security_error', 'Sicherheitsfehler: Firestore Regeln verweigern Zugriff');
                     } else {
                         updateFirebaseStatus('error', 'Verbindung zu Firestore unterbrochen');
                     }
@@ -264,7 +268,6 @@
             });
         }
 
-        // Nickname Modal Management
         window.openNicknameModal = function() {
             const name = prompt("Bitte gib deinen Dorf-Nickname ein:", window.userNickname);
             if (name !== null) {
@@ -294,7 +297,6 @@
             initFirebase();
         });
 
-        // Tab Navigation
         window.switchTab = function(tabName) {
             if (tabName === 'admin' && !window.isAdmin) {
                 document.getElementById('admin-modal').classList.remove('hidden');
@@ -311,7 +313,6 @@
             renderApp();
         }
 
-        // Admin Access Handling
         window.handleAdminClick = function() {
             if (window.isAdmin) {
                 if (confirm("Möchtest du den Admin-Modus verlassen?")) {
@@ -357,7 +358,6 @@
             }
         }
 
-        // Universal Delete Function for Admin
         window.deleteItem = async function(collectionName, id) {
             if (!window.isAdmin) {
                 showToast("Nur Admins dürfen Einträge löschen!", "error");
@@ -369,11 +369,10 @@
                 showToast("Eintrag erfolgreich gelöscht.");
             } catch(e) {
                 console.error("Löschfehler:", e);
-                showToast("Sicherheitsproblem beim Löschen (Zugriffsrechte prüfen)", "error");
+                showToast("Sicherheitsfehler beim Löschen (Firestore Regeln prüfen)", "error");
             }
         }
 
-        // Render Application Main View
         window.renderApp = function() {
             const container = document.getElementById('tab-content');
             if (!container) return;
@@ -474,11 +473,11 @@
                 showToast("Erfolgreich eingecheckt!");
             } catch(e) {
                 console.error(e);
-                showToast("Sicherheitsproblem oder Schreibrechte verweigert", "error");
+                showToast("Sicherheitsfehler: Zugriff verweigert", "error");
             }
         }
 
-        // 2. Pin-wand (Suchen / Bieten / Verschenken) View
+        // 2. Pin-wand View
         function renderPinwandView() {
             const list = window.appData.pinwand || [];
             return `
@@ -558,7 +557,7 @@
                 showToast("Anzeige auf Pin-wand veröffentlicht!");
             } catch(e) {
                 console.error(e);
-                showToast("Sicherheitsproblem oder Schreibrechte verweigert", "error");
+                showToast("Sicherheitsfehler: Zugriff verweigert", "error");
             }
         }
 
@@ -625,11 +624,11 @@
                 showToast("Notiz ans Schwarze Brett geheftet!");
             } catch(e) {
                 console.error(e);
-                showToast("Sicherheitsproblem oder Schreibrechte verweigert", "error");
+                showToast("Sicherheitsfehler: Zugriff verweigert", "error");
             }
         }
 
-        // 4. Hinwand (Nur Admin kann eintragen) View
+        // 4. Hinwand View (Admin Only)
         function renderHinwandView() {
             const list = window.appData.hinwand || [];
             return `
@@ -704,7 +703,7 @@
                 showToast("Offizielle Hinwand-Nachricht veröffentlicht!");
             } catch(e) {
                 console.error(e);
-                showToast("Sicherheitsproblem oder Schreibrechte verweigert", "error");
+                showToast("Sicherheitsfehler: Zugriff verweigert", "error");
             }
         }
 
@@ -797,7 +796,7 @@
                 }, 100);
             } catch(e) {
                 console.error("Chat send error:", e);
-                showToast("Sicherheitsproblem oder Schreibrechte verweigert", "error");
+                showToast("Sicherheitsfehler: Zugriff verweigert", "error");
             }
         }
 
@@ -901,7 +900,7 @@
                                             <div>
                                                 <strong>${escapeHtml(item.nickname)}</strong>: ${escapeHtml(item.message)}
                                             </div>
-                                            <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-net-50 rounded">Löschen</button>
+                                            <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 hover:text-red-800 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
                                         </div>
                                     `).join('')}
                             </div>
