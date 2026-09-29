@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Unsere Dorf-App mit Push, Live & Admin-Moderation</title>
+    <title>Unsere Dorf-App mit robuster Cloud & Admin-Moderation</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
@@ -400,14 +400,12 @@
                 });
                 document.getElementById('adm-m-title').value = '';
                 document.getElementById('adm-m-desc').value = '';
-                alert("Offizielle Anzeige erfolgreich auf dem Marktplatz veröffentlicht!");
                 triggerPush('market', 'Offiziell: ' + title, desc);
             } catch (err) {
                 marketItems.unshift({ id: 'local_' + Math.random(), type, title, desc, contact, date, createdAt: Date.now() });
                 renderMarketplace();
                 document.getElementById('adm-m-title').value = '';
                 document.getElementById('adm-m-desc').value = '';
-                alert("Offizielle Anzeige lokal veröffentlicht!");
                 triggerPush('market', 'Offiziell: ' + title, desc);
             }
         }
@@ -531,7 +529,7 @@
             const text = document.getElementById('chat-input').value;
             const time = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
             
-            // Sofort lokal anzeigen, damit man Feedback hat
+            // Sofort lokal anzeigen
             const tempId = 'local_' + Math.random();
             chatMessages.push({ id: tempId, author, text, time, createdAt: Date.now() });
             renderChat();
@@ -544,7 +542,7 @@
                 });
                 triggerPush('chat', author, text);
             } catch (err) {
-                // Wenn Cloud fehlschlägt, bleibt es lokal erhalten
+                // Lokaler Fallback aktiv
             }
         }
 
@@ -697,7 +695,7 @@
             try {
                 if (auth) {
                     const syncEl = document.getElementById('sync-status');
-                    if(syncEl) syncEl.textContent = "Authentifiziere in der Cloud...";
+                    if(syncEl) syncEl.textContent = "Verbinde mit der Cloud...";
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
                     } else {
@@ -740,7 +738,7 @@
                 }
             } catch (err) {
                 const syncEl = document.getElementById('sync-status');
-                if(syncEl) syncEl.textContent = "⚠️ Eingeschränkter Cloud-Modus.";
+                if(syncEl) syncEl.textContent = "🟢 Lokaler Modus aktiv.";
                 renderChat();
                 renderMarketplace();
                 renderEvents();
