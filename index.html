@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -13,10 +14,8 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Toast Benachrichtigungen -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
-    <!-- Admin Modal -->
     <div id="admin-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative">
             <h3 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-lock text-emerald-600 mr-2"></i>Admin-Bereich entsperren</h3>
@@ -29,7 +28,6 @@
         </div>
     </div>
 
-    <!-- Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -346,11 +344,11 @@
                         
                         <form onsubmit="submitCheckin(event)" class="space-y-4">
                             <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name / Nickname</label>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name / Nickname (Pflichtfeld)</label>
                                 ${window.isCheckedIn && window.userNickname ? `
                                     <div class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-semibold flex justify-between items-center">
                                         <span>${escapeHtml(window.userNickname)}</span>
-                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Angemeldet</span>
+                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Eingecheckt</span>
                                     </div>
                                     <input type="hidden" id="checkin-nickname" value="${escapeHtml(window.userNickname)}">
                                 ` : `
@@ -371,7 +369,7 @@
                                 </button>
                                 ${window.isCheckedIn ? `
                                     <button type="button" onclick="checkoutUser()" class="px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-semibold rounded-xl transition" title="Auschecken">
-                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                        <i class="fa-solid fa-right-from-bracket"></i> Auschecken
                                     </button>
                                 ` : ''}
                             </div>
@@ -438,7 +436,7 @@
             localStorage.setItem('dorf_is_checked_in', 'false');
             window.appData.checkins = window.appData.checkins.filter(i => i.nickname.toLowerCase() !== window.userNickname.toLowerCase());
             renderApp();
-            showToast("Ausgecheckt.");
+            showToast("Erfolgreich ausgecheckt.");
         }
 
         function renderPinwandView() {
@@ -591,7 +589,8 @@
                                         <h3 class="font-bold text-sm text-slate-900 mb-1">${escapeHtml(item.title)}</h3>
                                         <p class="text-xs text-slate-700 mb-3">${escapeHtml(item.description)}</p>
                                         <div class="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-amber-100">
-                                            <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                            <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
+                                            ${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}
@@ -661,7 +660,8 @@
                                             <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</span>
                                         </div>
                                         <h3 class="font-bold text-base text-slate-900 mt-2 mb-2">${escapeHtml(item.title)}</h3>
-                                        <p class="text-sm text-slate-700 mb-3">${escapeHtml(item.description)}</p>${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium">Löschen</button>` : ''}
+                                        <p class="text-sm text-slate-700 mb-3">${escapeHtml(item.description)}</p>
+                                        ${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium">Löschen</button>` : ''}
                                     </div>
                                 `).join('')}
                         </div>
@@ -706,7 +706,7 @@
                                         <div class="flex flex-col ${isSelf ? 'items-end' : 'items-start'}">
                                             <div class="flex items-center space-x-2 mb-1">
                                                 <span class="text-xs font-bold text-slate-700">${escapeHtml(item.nickname)}</span>
-                                                <span class="text-[10px] text-slate-400">${dateStr},${timeStr} Uhr</span>
+                                                <span class="text-[10px] text-slate-400">${dateStr}, ${timeStr} Uhr</span>
                                             </div>
                                             <div class="p-3 rounded-2xl text-sm max-w-md ${isSelf ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}">
                                                 ${escapeHtml(item.message)}
@@ -767,10 +767,9 @@
                         <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-calendar-plus text-emerald-600 mr-2"></i>Termin eintragen</h2>
                         <p class="text-xs text-slate-500 mb-4">Jeder Dorfbewohner kann hier Termine hinzufügen. Diese sind für alle sichtbar.</p>
                         
-                        <!-- Info zu Google Kalender Freigabe -->
                         <div class="mb-5 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-2">
-                            <div class="font-bold flex items-center"><i class="fa-brands fa-google mr-1.5 text-blue-600"></i>Hinweis zu Google Kalender:</div>
-                            <p class="leading-relaxed">Eingetragene Termine lassen sich mit einem Klick auf <strong>"Google"</strong> direkt in Ihren Google-Kalender übertragen. Jeder Termin hat zudem einen <strong>iCal-Export</strong>.</p>
+                            <div class="font-bold flex items-center"><i class="fa-solid fa-calendar-days mr-1.5 text-blue-600"></i>Kalender-Export:</div>
+                            <p class="leading-relaxed">Eingetragene Termine lassen sich mit einem Klick über den iCal-Export in jeden gängigen Kalender (Apple, Outlook, Google) übertragen.</p>
                         </div>
 
                         ${!window.isCheckedIn ? `
@@ -819,20 +818,18 @@
                                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-start gap-4">
                                         <div class="space-y-1 flex-1">
                                             <div class="flex items-center space-x-2">
-                                                <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-calendar mr-1"></i>${escapeHtml(item.date)}${item.time ? 'um ' + escapeHtml(item.time) : ''}</span>
+                                                <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-calendar mr-1"></i>${escapeHtml(item.date)} ${item.time ? 'um ' + escapeHtml(item.time) : ''}</span>
                                             </div>
-                                            <h3 class="font-bold text-sm text-slate-900">${escapeHtml(item.title)}</h3>${item.location ? `<p class="text-xs text-slate-600"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location)}</p>` : ''}
+                                            <h3 class="font-bold text-sm text-slate-900">${escapeHtml(item.title)}</h3>
+                                            ${item.location ? `<p class="text-xs text-slate-600"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location)}</p>` : ''}
                                             ${item.description ? `<p class="text-xs text-slate-500 mt-1">${escapeHtml(item.description)}</p>` : ''}
                                             <p class="text-[10px] text-slate-400 pt-1">Eingetragen von: ${escapeHtml(item.nickname)}</p>
                                         </div>
                                         <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto shrink-0">
-                                            <button type="button" onclick="addToGoogleCalendar('${item.id}')" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                                                <i class="fa-brands fa-google"></i><span>Google</span>
+                                            <button type="button" onclick="downloadIcal('${item.id}')" class="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                                <i class="fa-solid fa-calendar-plus"></i><span>Termin zum persönlichen Kalender hinzufügen</span>
                                             </button>
-                                            <button type="button" onclick="downloadIcal('${item.id}')" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
-                                                <i class="fa-solid fa-download"></i><span>iCal (.ics)</span>
-                                            </button>
-                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('kalender', '${item.id}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-xl transition cursor-pointer">Löschen</button>` : ''}
+                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('kalender', '${item.id}')" class="px-3 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-xl transition cursor-pointer">Löschen</button>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}
@@ -879,33 +876,6 @@
             return (window.appData.kalender || []).find(item => item.id === id);
         }
 
-        window.addToGoogleCalendar = function(id) {
-            const item = getCalendarItem(id);
-            if (!item) return;
-
-            const title = encodeURIComponent(item.title);
-            const details = encodeURIComponent((item.description || '') + (item.nickname ? `\nEingetragen von: ${item.nickname}` : ''));
-            const location = encodeURIComponent(item.location || '');
-            
-            const datePart = item.date.replace(/-/g, '');
-            const timePart = item.time ? item.time.replace(/:/g, '') + '00' : '120000';
-            const startDateTime = `${datePart}T${timePart}`;
-            
-            let endDateTime = startDateTime;
-            if (item.time) {
-                const [hours, minutes] = item.time.split(':');
-                const endHours = String(Number(hours) + 1).padStart(2, '0');
-                endDateTime = `${datePart}T${endHours}${minutes}00`;
-            } else {
-                endDateTime = `${datePart}T130000`;
-            }
-
-            const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDateTime}/${endDateTime}&details=${details}&location=${location}`;
-            
-            window.open(googleUrl, '_blank');
-            showToast("Google Kalender geöffnet!");
-        };
-
         window.downloadIcal = function(id) {
             const item = getCalendarItem(id);
             if (!item) return;
@@ -939,7 +909,6 @@
                 "END:VCALENDAR"
             ].join("\r\n");
 
-            // Verwende Data-URI als zuverlässigen Fallback für den Download
             const encodedUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
             const link = document.createElement('a');
             link.setAttribute('href', encodedUri);
@@ -949,7 +918,7 @@
             link.click();
             document.body.removeChild(link);
             
-            showToast(`iCal-Datei heruntergeladen (${fileName})!`);
+            showToast(`Kalenderdatei heruntergeladen (${fileName})!`);
         };
 
         function renderPushSettingsView() {
@@ -971,7 +940,7 @@
                             <span class="flex items-center font-medium text-slate-700"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Marktplatz Inserate</span>
                             <input type="checkbox" id="notif-pinwand" ${window.notificationSettings.pinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
                         </label>
-                        <label class="flex items-center justify-height p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett Notizen</span>
                             <input type="checkbox" id="notif-schwarzesbrett" ${window.notificationSettings.schwarzesbrett ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
                         </label>
@@ -990,3 +959,4 @@
     </script>
 </body>
 </html>
+```
