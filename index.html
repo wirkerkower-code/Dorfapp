@@ -1,10 +1,9 @@
-```html
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dorf-App</title>
+    <title>Die Kerkower</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -22,8 +21,8 @@
             <p class="text-sm text-slate-500 mb-4">Bitte geben Sie das Admin-Passwort ein (Standard: <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">dorf2026</code>).</p>
             <input type="password" id="admin-password-input" placeholder="Passwort..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none mb-4">
             <div class="flex justify-end space-x-2">
-                <button onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition">Abbrechen</button>
-                <button onclick="verifyAdminPassword()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition">Anmelden</button>
+                <button type="button" onclick="closeAdminModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium rounded-xl transition cursor-pointer">Abbrechen</button>
+                <button type="button" onclick="verifyAdminPassword()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl transition cursor-pointer">Anmelden</button>
             </div>
         </div>
     </div>
@@ -35,8 +34,8 @@
                     <i class="fa-solid fa-house-chimney text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Dorf-App <span class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold ml-2">Gemeinschaft</span></h1>
-                    <p class="text-xs text-slate-500">Projekt: dorfapp-2c48f</p>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">Die Kerkower <span class="text-xs bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full font-semibold ml-2">Gemeinschaft</span></h1>
+                    <p class="text-xs text-slate-500"></p>
                 </div>
             </div>
 
@@ -47,35 +46,34 @@
                     <span id="firebase-status-text">Online & Verbunden</span>
                 </div>
 
-                <button id="admin-btn" onclick="handleAdminClick()" class="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition shadow-sm">
+                <button type="button" id="admin-btn" onclick="handleAdminClick()" class="flex items-center space-x-1.5 px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-medium transition shadow-sm cursor-pointer">
                     <i class="fa-solid fa-shield-halved"></i>
                     <span id="admin-btn-text">Admin</span>
                 </button>
             </div>
         </div>
 
-        <!-- Navigation Tabs -->
         <div class="bg-slate-50 border-t border-slate-200">
             <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-2 py-2 scrollbar-none">
-                <button onclick="switchTab('checkin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm" data-tab="checkin">
+                <button type="button" onclick="switchTab('checkin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm cursor-pointer" data-tab="checkin">
                     <i class="fa-solid fa-clipboard-check"></i><span>Check In</span>
                 </button>
-                <button onclick="switchTab('hinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="hinwand">
+                <button type="button" onclick="switchTab('hinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="hinwand">
                     <i class="fa-solid fa-bullhorn text-amber-600"></i><span>Offizielle Bekanntmachungen</span>
                 </button>
-                <button onclick="switchTab('pinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="pinwand">
+                <button type="button" onclick="switchTab('pinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="pinwand">
                     <i class="fa-solid fa-store"></i><span>Marktplatz</span>
                 </button>
-                <button onclick="switchTab('schwarzesbrett')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="schwarzesbrett">
+                <button type="button" onclick="switchTab('schwarzesbrett')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="schwarzesbrett">
                     <i class="fa-solid fa-note-sticky"></i><span>Schwarzes Brett</span>
                 </button>
-                <button onclick="switchTab('chat')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="chat">
+                <button type="button" onclick="switchTab('chat')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="chat">
                     <i class="fa-solid fa-comments"></i><span>Dorf-Chat</span>
                 </button>
-                <button onclick="switchTab('kalender')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="kalender">
+                <button type="button" onclick="switchTab('kalender')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="kalender">
                     <i class="fa-solid fa-calendar-days"></i><span>Terminkalender</span>
                 </button>
-                <button onclick="switchTab('pushsettings')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="pushsettings">
+                <button type="button" onclick="switchTab('pushsettings')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer" data-tab="pushsettings">
                     <i class="fa-solid fa-bell"></i><span>Push-Einstellungen</span>
                 </button>
             </div>
@@ -87,7 +85,7 @@
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
-        Dorf-App &bull; Gemeinschaft &bull; Live-Modus
+        Stefan E. &bull; wirkerkower@gmail.com &bull; 017626747126
     </footer>
 
     <script type="module">
@@ -111,27 +109,59 @@
                 { id: 'sample1', nickname: 'Maria', status: 'Im Garten aktiv', location: 'Dorfplatz', timestamp: Date.now() - 3600000 }
             ],
             pinwand: [
-                { id: 'p1', category: 'Verschenke', title: 'Gut erhaltenes Kinderfahrrad', description: 'Abzuholen in der Hauptstr. 12.', nickname: 'Maria', image: '', timestamp: Date.now() - 7200000 }
+                { id: 'p1', category: 'Verschenke', title: 'Gut erhaltenes Kinderfahrrad', description: 'Abzuholen in der Hauptstr. 12.', nickname: 'Maria', timestamp: Date.now() - 7200000 }
             ],
             schwarzesbrett: [
                 { id: 'sb1', title: 'Fundstück: Schlüsselbund', description: 'Am Dorfteich gefunden.', nickname: 'Gemeindebüro', timestamp: Date.now() - 10000000 }
             ],
             hinwand: [
-                { id: 'h1', title: 'Willkommen in der Dorf-App!', description: 'Hier finden Sie alle offiziellen Infos.', timestamp: Date.now() - 86400000 }
+                { id: 'h1', title: 'Willkommen in Kerkow!', description: 'Hier finden Sie alle offiziellen Infos.', pdfName: '', pdfData: '', timestamp: Date.now() - 86400000 }
             ],
             chat: [
                 { id: 'c1', nickname: 'Hans', message: 'Hallo zusammen!', timestamp: Date.now() - 5000000 }
             ],
             kalender: [
                 { id: 'k1', title: 'Dorffest Vorbereitung', date: new Date().toISOString().split('T')[0], time: '18:00', location: 'Dorfgemeinschaftshaus', description: 'Besprechung für das Sommerfest.', nickname: 'Ortsvorsteher', timestamp: Date.now() - 20000000 }
-            ],
-            visitors: 42
+            ]
         };
 
         window.currentTab = 'checkin';
         window.userNickname = localStorage.getItem('dorf_nickname') || '';
-        window.isCheckedIn = localStorage.getItem('dorf_is_checked_in') === 'true';
+        window.isCheckedIn = Boolean(window.userNickname);
         window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
+        window.marketFilter = 'Alle';
+
+        // App usage logging for admin counter
+        window.logAppUsage = function() {
+            let usageLogs = JSON.parse(localStorage.getItem('dorf_usage_logs') || '[]');
+            const now = Date.now();
+            usageLogs.push(now);
+            // Keep logs within last 90 days to prevent bloat
+            const cutoff = now - (90 * 24 * 60 * 60 * 1000);
+            usageLogs = usageLogs.filter(t => t > cutoff);
+            localStorage.setItem('dorf_usage_logs', JSON.stringify(usageLogs));
+        }
+        window.logAppUsage();
+
+        window.getUsageStats = function() {
+            const usageLogs = JSON.parse(localStorage.getItem('dorf_usage_logs') || '[]');
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+            const weekStart = todayStart - (7 * 24 * 60 * 60 * 1000);
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+            let dayCount = 0;
+            let weekCount = 0;
+            let monthCount = 0;
+
+            usageLogs.forEach(t => {
+                if (t >= todayStart) dayCount++;
+                if (t >= weekStart) weekCount++;
+                if (t >= monthStart) monthCount++;
+            });
+
+            return { day: dayCount, week: weekCount, month: monthCount };
+        }
 
         window.notificationSettings = JSON.parse(localStorage.getItem('dorf_notification_settings') || JSON.stringify({
             checkin: true,
@@ -156,7 +186,7 @@
         }
 
         window.showFirebaseInfo = function() {
-            alert("Firebase Status: Verbunden mit Projekt dorfapp-2c48f (Firestore Aktiv).");
+            showToast("Firebase Status: Verbunden mit Projekt dorfapp-2c48f (Firestore Aktiv).");
         }
 
         window.showToast = function(message, type = 'success') {
@@ -230,6 +260,9 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            if (window.userNickname) {
+                window.isCheckedIn = true;
+            }
             updateAdminUI();
             renderApp();
         });
@@ -238,9 +271,9 @@
             window.currentTab = tabName;
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 if (btn.dataset.tab === tabName) {
-                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm";
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm cursor-pointer";
                 } else {
-                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60";
+                    btn.className = "tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 cursor-pointer";
                 }
             });
             renderApp();
@@ -248,13 +281,11 @@
 
         window.handleAdminClick = function() {
             if (window.isAdmin) {
-                if (confirm("Möchtest du den Admin-Modus verlassen?")) {
-                    window.isAdmin = false;
-                    localStorage.setItem('dorf_is_admin', 'false');
-                    updateAdminUI();
-                    showToast("Admin-Modus beendet");
-                    renderApp();
-                }
+                window.isAdmin = false;
+                localStorage.setItem('dorf_is_admin', 'false');
+                updateAdminUI();
+                showToast("Admin-Modus beendet");
+                renderApp();
             } else {
                 document.getElementById('admin-modal').classList.remove('hidden');
             }
@@ -293,7 +324,6 @@
                 showToast("Nur Admins dürfen Einträge löschen!", "error");
                 return;
             }
-            if (!confirm("Möchtest du diesen Eintrag wirklich löschen?")) return;
             
             window.appData[collectionName] = window.appData[collectionName].filter(item => item.id !== id);
             renderApp();
@@ -335,46 +365,62 @@
             const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
             const activeList = allCheckins.filter(item => item.timestamp >= twentyFourHoursAgo);
             const existingUserCheckin = allCheckins.find(item => item.nickname.toLowerCase() === window.userNickname.toLowerCase());
+            const stats = window.getUsageStats();
 
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Check In</h2>
-                        <p class="text-xs text-slate-500 mb-6">Tragen Sie Ihren aktuellen Status ein oder checken Sie aus.</p>
-                        
-                        <form onsubmit="submitCheckin(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name / Nickname (Pflichtfeld)</label>
-                                ${window.isCheckedIn && window.userNickname ? `
-                                    <div class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-semibold flex justify-between items-center">
-                                        <span>${escapeHtml(window.userNickname)}</span>
-                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Eingecheckt</span>
-                                    </div>
-                                    <input type="hidden" id="checkin-nickname" value="${escapeHtml(window.userNickname)}">
-                                ` : `
-                                    <input type="text" id="checkin-nickname" value="${escapeHtml(window.userNickname)}" placeholder="z.B. Anna Müller..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
-                                `}
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Status / Aktivität (optional)</label>
-                                <input type="text" id="checkin-status" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.status || '') : ''}" placeholder="z.B. Im Garten..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ort im Dorf (optional)</label>
-                                <input type="text" id="checkin-location" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.location || '') : ''}" placeholder="z.B. Dorfplatz..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
-                            </div>
-                            <div class="flex gap-2">
-                                <button type="submit" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                    <i class="fa-solid fa-check mr-2"></i>${window.isCheckedIn ? 'Status Aktualisieren' : 'Jetzt Einchecken'}
+                    <div class="space-y-6">
+                        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                            <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Check In & Status</h2>
+                            <p class="text-xs text-slate-500 mb-6">Sie sind dauerhaft eingeloggt. Aktualisieren Sie hier ganz einfach Ihren Status oder Ihren Aufenthaltsort.</p>
+                            
+                            <form onsubmit="submitCheckin(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name / Nickname (Pflichtfeld)</label>
+                                    ${window.userNickname ? `
+                                        <div class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-bold flex items-center justify-between">
+                                            <span>${escapeHtml(window.userNickname)}</span>
+                                            <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">Dauerhaft aktiv</span>
+                                        </div>
+                                    ` : `
+                                        <input type="text" id="checkin-nickname" placeholder="z.B. Anna Müller..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                    `}
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Status / Aktivität (optional)</label>
+                                    <input type="text" id="checkin-status" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.status || '') : ''}" placeholder="z.B. Im Garten..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ort im Dorf (optional)</label>
+                                    <input type="text" id="checkin-location" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.location || '') : ''}" placeholder="z.B. Dorfplatz..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
+                                    <i class="fa-solid fa-arrows-rotate mr-2"></i>Status Aktualisieren
                                 </button>
-                                ${window.isCheckedIn ? `
-                                    <button type="button" onclick="checkoutUser()" class="px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-semibold rounded-xl transition" title="Auschecken">
-                                        <i class="fa-solid fa-right-from-bracket"></i> Auschecken
-                                    </button>
-                                ` : ''}
+                            </form>
+                        </div>
+
+                        ${window.isAdmin ? `
+                            <div class="bg-slate-900 text-white p-6 rounded-2xl shadow-md border border-slate-800">
+                                <h3 class="text-sm font-bold text-emerald-400 mb-3 flex items-center"><i class="fa-solid fa-chart-line mr-2"></i>Admin: App-Nutzungszähler</h3>
+                                <div class="grid grid-cols-3 gap-3 text-center">
+                                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                                        <span class="block text-xl font-extrabold text-white">${stats.day}</span>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Heute</span>
+                                    </div>
+                                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                                        <span class="block text-xl font-extrabold text-white">${stats.week}</span>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Diese Woche</span>
+                                    </div>
+                                    <div class="bg-slate-800/80 p-3 rounded-xl border border-slate-700">
+                                        <span class="block text-xl font-extrabold text-white">${stats.month}</span>
+                                        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Diesen Monat</span>
+                                    </div>
+                                </div>
                             </div>
-                        </form>
+                        ` : ''}
                     </div>
+
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-users text-emerald-600 mr-2"></i>Aktive Bewohner Online (${activeList.length})</h2>
                         <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
@@ -389,7 +435,7 @@
                                             </div>
                                             <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location || 'Kein Ort angegeben')} &bull; ${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
-                                        ${window.isAdmin ? `<button onclick="deleteItem('checkins', '${item.id}')" class="text-red-500 hover:text-red-700 text-xs px-2.5 py-1 rounded-lg bg-red-50 font-medium">Löschen</button>` : ''}
+                                        ${window.isAdmin ? `<button type="button" onclick="deleteItem('checkins', '${item.id}')" class="text-red-500 hover:text-red-700 text-xs px-2.5 py-1 rounded-lg bg-red-50 font-medium cursor-pointer">Löschen</button>` : ''}
                                     </div>
                                 `).join('')}
                         </div>
@@ -400,18 +446,29 @@
 
         window.submitCheckin = async function(e) {
             e.preventDefault();
-            const nicknameInput = document.getElementById('checkin-nickname').value.trim();
+            const nicknameInput = window.userNickname || document.getElementById('checkin-nickname').value.trim();
             const status = document.getElementById('checkin-status').value.trim() || 'Online';
             const location = document.getElementById('checkin-location').value.trim();
             if (!nicknameInput) return;
 
+            // Check if name is already taken by someone else
+            const allCheckins = window.appData.checkins || [];
+            const nameTaken = allCheckins.some(item => 
+                item.nickname.toLowerCase() === nicknameInput.toLowerCase() && 
+                window.userNickname.toLowerCase() !== nicknameInput.toLowerCase()
+            );
+
+            if (nameTaken) {
+                showToast("Dieser Name ist bereits vergeben. Bitte wählen Sie einen anderen Namen.", "error");
+                return;
+            }
+
             window.userNickname = nicknameInput;
             window.isCheckedIn = true;
             localStorage.setItem('dorf_nickname', nicknameInput);
-            localStorage.setItem('dorf_is_checked_in', 'true');
 
-            const existingIdx = window.appData.checkins.findIndex(i => i.nickname.toLowerCase() === nicknameInput.toLowerCase());
-            const newItem = { id: existingIdx >= 0 ? window.appData.checkins[existingIdx].id : ('chk_' + Date.now()), nickname: nicknameInput, status, location, timestamp: Date.now() };
+            const existingIdx = allCheckins.findIndex(i => i.nickname.toLowerCase() === nicknameInput.toLowerCase());
+            const newItem = { id: existingIdx >= 0 ? allCheckins[existingIdx].id : ('chk_' + Date.now()), nickname: nicknameInput, status, location, timestamp: Date.now() };
             
             if (existingIdx >= 0) {
                 window.appData.checkins[existingIdx] = newItem;
@@ -420,7 +477,7 @@
             }
 
             renderApp();
-            showToast("Erfolgreich eingecheckt!");
+            showToast("Status erfolgreich aktualisiert!");
 
             if (db) {
                 try {
@@ -431,65 +488,58 @@
             }
         }
 
-        window.checkoutUser = async function() {
-            window.isCheckedIn = false;
-            localStorage.setItem('dorf_is_checked_in', 'false');
-            window.appData.checkins = window.appData.checkins.filter(i => i.nickname.toLowerCase() !== window.userNickname.toLowerCase());
+        window.setMarketFilter = function(cat) {
+            window.marketFilter = cat;
             renderApp();
-            showToast("Erfolgreich ausgecheckt.");
         }
 
         function renderPinwandView() {
             const list = window.appData.pinwand || [];
+            const filteredList = window.marketFilter === 'Alle' ? list : list.filter(item => item.category === window.marketFilter);
+
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Marktplatz</h2>
                         <p class="text-xs text-slate-500 mb-6">Biete etwas an, suche oder verschenke Gegenstände.</p>
                         
-                        ${!window.isCheckedIn ? `
-                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Anzeigen zu erstellen.
+                        <form onsubmit="submitPinwand(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
                             </div>
-                        ` : `
-                            <form onsubmit="submitPinwand(event)" class="space-y-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
-                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kategorie</label>
-                                    <select id="pin-category" class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                        <option value="Biete">Biete</option><option value="Suche">Suche</option><option value="Verschenke">Verschenke</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
-                                    <input type="text" id="pin-title" placeholder="z.B. Rasenmäher..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung</label>
-                                    <textarea id="pin-desc" rows="3" placeholder="Details..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Foto hinzufügen (optional)</label>
-                                    <input type="file" id="pin-image-file" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
-                                    <input type="hidden" id="pin-image-base64" value="">
-                                    <div id="image-preview-container" class="mt-2 hidden">
-                                        <img id="image-preview" src="" alt="Vorschau" class="h-24 w-full object-cover rounded-xl border border-slate-200">
-                                    </div>
-                                </div>
-                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                    <i class="fa-solid fa-paper-plane mr-2"></i>Anzeige Veröffentlichen
-                                </button>
-                            </form>
-                        `}
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategorie</label>
+                                <select id="pin-category" class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                    <option value="Biete">Biete</option><option value="Suche">Suche</option><option value="Verschenke">Verschenke</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
+                                <input type="text" id="pin-title" placeholder="z.B. Rasenmäher..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung</label>
+                                <textarea id="pin-desc" rows="3" placeholder="Details..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
+                                <i class="fa-solid fa-paper-plane mr-2"></i>Anzeige Veröffentlichen
+                            </button>
+                        </form>
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-emerald-600 mr-2"></i>Aktuelle Inserate</h2>
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                            <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-bullhorn text-emerald-600 mr-2"></i>Aktuelle Inserate</h2>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button type="button" onclick="setMarketFilter('Alle')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${window.marketFilter === 'Alle' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">Alle</button>
+                                <button type="button" onclick="setMarketFilter('Biete')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${window.marketFilter === 'Biete' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">Biete</button>
+                                <button type="button" onclick="setMarketFilter('Suche')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${window.marketFilter === 'Suche' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">Suche</button>
+                                <button type="button" onclick="setMarketFilter('Verschenke')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${window.marketFilter === 'Verschenke' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">Verschenke</button>
+                            </div>
+                        </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[550px] overflow-y-auto pr-2">
-                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center col-span-2">Keine Anzeigen vorhanden.</p>' :
-                                list.map(item => `
+                            ${filteredList.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center col-span-2">Keine Anzeigen in dieser Kategorie vorhanden.</p>' :
+                                filteredList.map(item => `
                                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
                                         <div>
                                             <div class="flex justify-between items-start mb-2">
@@ -498,11 +548,10 @@
                                             </div>
                                             <h3 class="font-bold text-sm text-slate-800 mb-1">${escapeHtml(item.title)}</h3>
                                             <p class="text-xs text-slate-600 mb-3">${escapeHtml(item.description)}</p>
-                                            ${item.image ? `<div class="mb-3"><img src="${item.image}" alt="Inserat Bild" class="h-36 w-full object-cover rounded-xl border border-slate-200 shadow-sm"></div>` : ''}
                                         </div>
                                         <div class="flex justify-between items-center pt-2 border-t border-slate-200 text-[11px] text-slate-500">
                                             <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
-                                            ${window.isAdmin ? `<button onclick="deleteItem('pinwand', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('pinwand', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium cursor-pointer">Löschen</button>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}
@@ -512,38 +561,22 @@
             `;
         }
 
-        window.handleImageUpload = function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64 = e.target.result;
-                document.getElementById('pin-image-base64').value = base64;
-                const preview = document.getElementById('image-preview');
-                preview.src = base64;
-                document.getElementById('image-preview-container').classList.remove('hidden');
-            };
-            reader.readAsDataURL(file);
-        }
-
         window.submitPinwand = async function(e) {
             e.preventDefault();
-            if (!window.isCheckedIn) return;
-            const nickname = window.userNickname;
+            const nickname = window.userNickname || 'Anonym';
             const category = document.getElementById('pin-category').value;
             const title = document.getElementById('pin-title').value.trim();
             const description = document.getElementById('pin-desc').value.trim();
-            const image = document.getElementById('pin-image-base64').value || '';
             if (!title || !description) return;
 
-            const newItem = { id: 'pin_' + Date.now(), category, title, description, nickname, image, timestamp: Date.now() };
+            const newItem = { id: 'pin_' + Date.now(), category, title, description, nickname, timestamp: Date.now() };
             window.appData.pinwand.unshift(newItem);
             renderApp();
             showToast("Anzeige erfolgreich veröffentlicht!");
 
             if (db) {
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pinwand'), { category, title, description, nickname, image, timestamp: newItem.timestamp });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pinwand'), { category, title, description, nickname, timestamp: newItem.timestamp });
                 } catch(e) { console.warn(e); }
             }
         }
@@ -556,29 +589,23 @@
                         <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett</h2>
                         <p class="text-xs text-slate-500 mb-6">Wichtige Hinweise, Notizen und Fundstücke.</p>
                         
-                        ${!window.isCheckedIn ? `
-                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Notizen zu verfassen.
+                        <form onsubmit="submitSchwarzesBrett(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
                             </div>
-                        ` : `
-                            <form onsubmit="submitSchwarzesBrett(event)" class="space-y-4">
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
-                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
-                                    <input type="text" id="sb-title" placeholder="z.B. Schlüssel gefunden..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nachricht</label>
-                                    <textarea id="sb-desc" rows="4" placeholder="Nachricht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
-                                </div>
-                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                    <i class="fa-solid fa-thumbtack mr-2"></i>Notiz Anheften
-                                </button>
-                            </form>
-                        `}
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
+                                <input type="text" id="sb-title" placeholder="z.B. Schlüssel gefunden..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nachricht</label>
+                                <textarea id="sb-desc" rows="4" placeholder="Nachricht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
+                                <i class="fa-solid fa-thumbtack mr-2"></i>Notiz Anheften
+                            </button>
+                        </form>
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-clipboard-list text-emerald-600 mr-2"></i>Notizen (${list.length})</h2>
@@ -590,7 +617,7 @@
                                         <p class="text-xs text-slate-700 mb-3">${escapeHtml(item.description)}</p>
                                         <div class="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-amber-100">
                                             <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
-                                            ${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium cursor-pointer">Löschen</button>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}
@@ -602,8 +629,7 @@
 
         window.submitSchwarzesBrett = async function(e) {
             e.preventDefault();
-            if (!window.isCheckedIn) return;
-            const nickname = window.userNickname;
+            const nickname = window.userNickname || 'Anonym';
             const title = document.getElementById('sb-title').value.trim();
             const description = document.getElementById('sb-desc').value.trim();
             if (!title || !description) return;
@@ -637,7 +663,14 @@
                                     <label class="block text-xs font-semibold text-slate-700 mb-1">Bekanntmachung</label>
                                     <textarea id="hw-desc" rows="4" placeholder="Text..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
                                 </div>
-                                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">PDF-Dokument anhängen (nur PDF)</label>
+                                    <input type="file" id="hw-pdf-file" accept="application/pdf" onchange="handlePdfUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 cursor-pointer">
+                                    <input type="hidden" id="hw-pdf-name" value="">
+                                    <input type="hidden" id="hw-pdf-base64" value="">
+                                    <p id="pdf-selected-label" class="text-[11px] text-emerald-600 font-medium mt-1.5 hidden"><i class="fa-solid fa-file-pdf mr-1"></i><span id="pdf-file-name-text"></span></p>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
                                     <i class="fa-solid fa-bullhorn mr-2"></i>Veröffentlichen
                                 </button>
                             </form>
@@ -661,7 +694,16 @@
                                         </div>
                                         <h3 class="font-bold text-base text-slate-900 mt-2 mb-2">${escapeHtml(item.title)}</h3>
                                         <p class="text-sm text-slate-700 mb-3">${escapeHtml(item.description)}</p>
-                                        ${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium">Löschen</button>` : ''}
+                                        ${item.pdfData ? `
+                                            <div class="mb-3">
+                                                <a href="${item.pdfData}" download="${item.pdfName || 'Bekanntmachung.pdf'}" class="inline-flex items-center space-x-2 px-3.5 py-2 bg-amber-100 hover:bg-amber-200 text-amber-900 rounded-xl text-xs font-semibold transition border border-amber-300">
+                                                    <i class="fa-solid fa-file-pdf text-red-600 text-sm"></i>
+                                                    <span>${escapeHtml(item.pdfName || 'Dokument herunterladen.pdf')}</span>
+                                                    <i class="fa-solid fa-download ml-1 text-slate-500"></i>
+                                                </a>
+                                            </div>
+                                        ` : ''}
+                                        ${window.isAdmin ? `<button type="button" onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium cursor-pointer">Löschen</button>` : ''}
                                     </div>
                                 `).join('')}
                         </div>
@@ -670,21 +712,43 @@
             `;
         }
 
+        window.handlePdfUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if (file.type !== 'application/pdf') {
+                showToast("Bitte nur PDF-Dateien hochladen!", "error");
+                event.target.value = '';
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                document.getElementById('hw-pdf-base64').value = base64;
+                document.getElementById('hw-pdf-name').value = file.name;
+                const label = document.getElementById('pdf-selected-label');
+                document.getElementById('pdf-file-name-text').textContent = file.name;
+                label.classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
         window.submitHinwand = async function(e) {
             e.preventDefault();
             if (!window.isAdmin) return;
             const title = document.getElementById('hw-title').value.trim();
             const description = document.getElementById('hw-desc').value.trim();
+            const pdfName = document.getElementById('hw-pdf-name').value || '';
+            const pdfData = document.getElementById('hw-pdf-base64').value || '';
             if (!title || !description) return;
 
-            const newItem = { id: 'hw_' + Date.now(), title, description, timestamp: Date.now() };
+            const newItem = { id: 'hw_' + Date.now(), title, description, pdfName, pdfData, timestamp: Date.now() };
             window.appData.hinwand.unshift(newItem);
             renderApp();
             showToast("Bekanntmachung veröffentlicht!");
 
             if (db) {
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hinwand'), { title, description, timestamp: newItem.timestamp });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hinwand'), { title, description, pdfName, pdfData, timestamp: newItem.timestamp });
                 } catch(e) { console.warn(e); }
             }
         }
@@ -711,22 +775,16 @@
                                             <div class="p-3 rounded-2xl text-sm max-w-md ${isSelf ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}">
                                                 ${escapeHtml(item.message)}
                                             </div>
-                                            ${window.isAdmin ? `<button onclick="deleteItem('chat', '${item.id}')" class="text-red-400 text-[10px] mt-1">Löschen</button>` : ''}
+                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('chat', '${item.id}')" class="text-red-400 text-[10px] mt-1 cursor-pointer">Löschen</button>` : ''}
                                         </div>
                                     `;
                                 }).join('')}
                         </div>
                         
-                        ${!window.isCheckedIn ? `
-                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs text-center">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um am Chat teilzunehmen.
-                            </div>
-                        ` : `
-                            <form onsubmit="submitChatMessage(event)" class="flex gap-2 pt-2 border-t border-slate-100">
-                                <input type="text" id="chat-input" placeholder="Nachricht an das Dorf..." required class="flex-1 text-sm p-3 rounded-xl border border-slate-300 bg-slate-50" autocomplete="off">
-                                <button type="submit" class="bg-emerald-600 text-white px-5 py-3 rounded-xl font-medium text-sm"><i class="fa-solid fa-paper-plane"></i></button>
-                            </form>
-                        `}
+                        <form onsubmit="submitChatMessage(event)" class="flex gap-2 pt-2 border-t border-slate-100">
+                            <input type="text" id="chat-input" placeholder="Nachricht an das Dorf..." required class="flex-1 text-sm p-3 rounded-xl border border-slate-300 bg-slate-50" autocomplete="off">
+                            <button type="submit" class="bg-emerald-600 text-white px-5 py-3 rounded-xl font-medium text-sm cursor-pointer"><i class="fa-solid fa-paper-plane"></i></button>
+                        </form>
                     </div>
                 </div>
             `;
@@ -734,13 +792,12 @@
 
         window.submitChatMessage = async function(e) {
             e.preventDefault();
-            if (!window.isCheckedIn) return;
             const input = document.getElementById('chat-input');
             if(!input) return;
             const message = input.value.trim();
             if (!message) return;
 
-            const nickname = window.userNickname;
+            const nickname = window.userNickname || 'Anonym';
             const newItem = { id: 'chat_' + Date.now(), nickname, message, timestamp: Date.now() };
             window.appData.chat.push(newItem);
             input.value = '';
@@ -769,46 +826,40 @@
                         
                         <div class="mb-5 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-2">
                             <div class="font-bold flex items-center"><i class="fa-solid fa-calendar-days mr-1.5 text-blue-600"></i>Kalender-Export:</div>
-                            <p class="leading-relaxed">Eingetragene Termine lassen sich mit einem Klick über den iCal-Export in jeden gängigen Kalender (Apple, Outlook, Google) übertragen.</p>
+                            <p class="leading-relaxed">Eingetragene Termine lassen sich mit einem Klick in jeden gängigen Kalender (Apple, Outlook, Google Import) übertragen.</p>
                         </div>
 
-                        ${!window.isCheckedIn ? `
-                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
-                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Termine zu erstellen.
+                        <form onsubmit="submitKalender(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
                             </div>
-                        ` : `
-                            <form onsubmit="submitKalender(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel der Veranstaltung</label>
+                                <input type="text" id="cal-title" placeholder="z.B. Feuerwehr-Übung..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
-                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel der Veranstaltung</label>
-                                    <input type="text" id="cal-title" placeholder="z.B. Feuerwehr-Übung..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                </div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Datum</label>
-                                        <input type="date" id="cal-date" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                    </div>
-                                    <div>
-                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Uhrzeit</label>
-                                        <input type="time" id="cal-time" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                    </div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Datum</label>
+                                    <input type="date" id="cal-date" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ort</label>
-                                    <input type="text" id="cal-location" placeholder="z.B. Gerätehaus..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Uhrzeit</label>
+                                    <input type="time" id="cal-time" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
                                 </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung / Details</label>
-                                    <textarea id="cal-desc" rows="3" placeholder="Beschreibung..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
-                                </div>
-                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
-                                    <i class="fa-solid fa-calendar-check mr-2"></i>Termin Speichern
-                                </button>
-                            </form>
-                        `}
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ort</label>
+                                <input type="text" id="cal-location" placeholder="z.B. Gerätehaus..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung / Details</label>
+                                <textarea id="cal-desc" rows="3" placeholder="Beschreibung..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
+                                <i class="fa-solid fa-calendar-check mr-2"></i>Termin Speichern
+                            </button>
+                        </form>
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Anstehende Dorf-Termine (${list.length})</h2>
@@ -841,8 +892,7 @@
 
         window.submitKalender = async function(e) {
             e.preventDefault();
-            if (!window.isCheckedIn) return;
-            const nickname = window.userNickname;
+            const nickname = window.userNickname || 'Anonym';
             const titleElement = document.getElementById('cal-title');
             const dateElement = document.getElementById('cal-date');
             const timeElement = document.getElementById('cal-time');
@@ -918,39 +968,39 @@
             link.click();
             document.body.removeChild(link);
             
-            showToast(`Kalenderdatei heruntergeladen (${fileName})!`);
+            showToast(`Termin zum persönlichen Kalender hinzugefügt (${fileName})!`);
         };
 
         function renderPushSettingsView() {
             return `
                 <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i>Push-Benachrichtigungen verwalten</h2>
-                    <p class="text-xs text-slate-500 mb-6">Wählen Sie aus, für welche Bereiche der Dorf-App Sie Benachrichtigungen erhalten möchten:</p>
+                    <p class="text-xs text-slate-500 mb-6">Wählen Sie aus, für welche Bereiche der Kerkower-App Sie Benachrichtigungen erhalten möchten:</p>
                     
                     <div class="space-y-4 text-sm">
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Check In Aktivitäten</span>
-                            <input type="checkbox" id="notif-checkin" ${window.notificationSettings.checkin ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <input type="checkbox" id="notif-checkin" ${window.notificationSettings.checkin ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Offizielle Bekanntmachungen</span>
-                            <input type="checkbox" id="notif-hinwand" ${window.notificationSettings.hinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <input type="checkbox" id="notif-hinwand" ${window.notificationSettings.hinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="flex items-center font-medium text-slate-700"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Marktplatz Inserate</span>
-                            <input type="checkbox" id="notif-pinwand" ${window.notificationSettings.pinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <input type="checkbox" id="notif-pinwand" ${window.notificationSettings.pinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett Notizen</span>
-                            <input type="checkbox" id="notif-schwarzesbrett" ${window.notificationSettings.schwarzesbrett ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <input type="checkbox" id="notif-schwarzesbrett" ${window.notificationSettings.schwarzesbrett ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
-                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-comments text-emerald-600 mr-2"></i>Dorf-Chat Nachrichten</span>
-                            <input type="checkbox" id="notif-chat" ${window.notificationSettings.chat ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <span class="flex items-center font-medium text-slate-700"><i class="fa-solid fa-comments text-emerald-600 mr-2"></i>Dorf-Chat Nachrichten</span>
+                            <input type="checkbox" id="notif-chat" ${window.notificationSettings.chat ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                         <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
                             <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Terminkalender Einträge</span>
-                            <input type="checkbox" id="notif-kalender" ${window.notificationSettings.kalender ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                            <input type="checkbox" id="notif-kalender" ${window.notificationSettings.kalender ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5 cursor-pointer">
                         </label>
                     </div>
                 </div>
@@ -959,4 +1009,3 @@
     </script>
 </body>
 </html>
-```
