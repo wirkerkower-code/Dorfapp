@@ -1,10 +1,9 @@
-html
 <!DOCTYPE html>
 <html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wir Kerkower</title>
+    <title>Dorf-App</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14,6 +13,7 @@ html
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
+    <!-- Toast Benachrichtigungen -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
     <!-- Admin Modal -->
@@ -29,6 +29,7 @@ html
         </div>
     </div>
 
+    <!-- Header -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center space-x-3">
@@ -59,16 +60,16 @@ html
         <div class="bg-slate-50 border-t border-slate-200">
             <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto space-x-2 py-2 scrollbar-none">
                 <button onclick="switchTab('checkin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-emerald-600 text-white shadow-sm" data-tab="checkin">
-                    <i class="fa-solid fa-clipboard-check"></i><span>Check in</span>
+                    <i class="fa-solid fa-clipboard-check"></i><span>Check In</span>
+                </button>
+                <button onclick="switchTab('hinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="hinwand">
+                    <i class="fa-solid fa-bullhorn text-amber-600"></i><span>Offizielle Bekanntmachungen</span>
                 </button>
                 <button onclick="switchTab('pinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="pinwand">
-                    <i class="fa-solid fa-signs-post"></i><span>suche, biete, verschenke</span>
+                    <i class="fa-solid fa-store"></i><span>Marktplatz</span>
                 </button>
                 <button onclick="switchTab('schwarzesbrett')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="schwarzesbrett">
                     <i class="fa-solid fa-note-sticky"></i><span>Schwarzes Brett</span>
-                </button>
-                <button onclick="switchTab('hinwand')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="hinwand">
-                    <i class="fa-solid fa-bullhorn text-amber-600"></i><span>offizielles Board</span>
                 </button>
                 <button onclick="switchTab('chat')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="chat">
                     <i class="fa-solid fa-comments"></i><span>Dorf-Chat</span>
@@ -76,8 +77,8 @@ html
                 <button onclick="switchTab('kalender')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="kalender">
                     <i class="fa-solid fa-calendar-days"></i><span>Terminkalender</span>
                 </button>
-                <button id="admin-tab-btn" onclick="switchTab('admin')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60 hidden" data-tab="admin">
-                    <i class="fa-solid fa-gears text-amber-500"></i><span>Adminbereich</span>
+                <button onclick="switchTab('pushsettings')" class="tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center space-x-2 bg-white text-slate-600 hover:bg-slate-200/60" data-tab="pushsettings">
+                    <i class="fa-solid fa-bell"></i><span>Push-Einstellungen</span>
                 </button>
             </div>
         </div>
@@ -88,7 +89,7 @@ html
     </main>
 
     <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
-        Dorf-App &bull; Projekt: dorfapp-2c48f &bull; Live-Modus
+        Dorf-App &bull; Gemeinschaft &bull; Live-Modus
     </footer>
 
     <script type="module">
@@ -112,7 +113,7 @@ html
                 { id: 'sample1', nickname: 'Maria', status: 'Im Garten aktiv', location: 'Dorfplatz', timestamp: Date.now() - 3600000 }
             ],
             pinwand: [
-                { id: 'p1', category: 'Verschenke', title: 'Gut erhaltenes Kinderfahrrad', description: 'Abzuholen in der Hauptstr. 12.', nickname: 'Maria', timestamp: Date.now() - 7200000 }
+                { id: 'p1', category: 'Verschenke', title: 'Gut erhaltenes Kinderfahrrad', description: 'Abzuholen in der Hauptstr. 12.', nickname: 'Maria', image: '', timestamp: Date.now() - 7200000 }
             ],
             schwarzesbrett: [
                 { id: 'sb1', title: 'Fundstück: Schlüsselbund', description: 'Am Dorfteich gefunden.', nickname: 'Gemeindebüro', timestamp: Date.now() - 10000000 }
@@ -123,12 +124,38 @@ html
             chat: [
                 { id: 'c1', nickname: 'Hans', message: 'Hallo zusammen!', timestamp: Date.now() - 5000000 }
             ],
+            kalender: [
+                { id: 'k1', title: 'Dorffest Vorbereitung', date: new Date().toISOString().split('T')[0], time: '18:00', location: 'Dorfgemeinschaftshaus', description: 'Besprechung für das Sommerfest.', nickname: 'Ortsvorsteher', timestamp: Date.now() - 20000000 }
+            ],
             visitors: 42
         };
 
         window.currentTab = 'checkin';
         window.userNickname = localStorage.getItem('dorf_nickname') || '';
+        window.isCheckedIn = localStorage.getItem('dorf_is_checked_in') === 'true';
         window.isAdmin = localStorage.getItem('dorf_is_admin') === 'true';
+
+        window.notificationSettings = JSON.parse(localStorage.getItem('dorf_notification_settings') || JSON.stringify({
+            checkin: true,
+            hinwand: true,
+            pinwand: true,
+            schwarzesbrett: true,
+            chat: true,
+            kalender: false
+        }));
+
+        window.saveNotificationSettings = function() {
+            window.notificationSettings = {
+                checkin: document.getElementById('notif-checkin').checked,
+                hinwand: document.getElementById('notif-hinwand').checked,
+                pinwand: document.getElementById('notif-pinwand').checked,
+                schwarzesbrett: document.getElementById('notif-schwarzesbrett').checked,
+                chat: document.getElementById('notif-chat').checked,
+                kalender: document.getElementById('notif-kalender').checked
+            };
+            localStorage.setItem('dorf_notification_settings', JSON.stringify(window.notificationSettings));
+            showToast("Benachrichtigungseinstellungen gespeichert!");
+        }
 
         window.showFirebaseInfo = function() {
             alert("Firebase Status: Verbunden mit Projekt dorfapp-2c48f (Firestore Aktiv).");
@@ -145,7 +172,7 @@ html
             setTimeout(() => {
                 toast.classList.add('translate-y-2', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 3500);
         };
 
         window.escapeHtml = function(str) {
@@ -163,7 +190,7 @@ html
 
         function setupListeners() {
             if(!db) return;
-            const collections = ['checkins', 'pinwand', 'schwarzesbrett', 'hinwand', 'chat'];
+            const collections = ['checkins', 'pinwand', 'schwarzesbrett', 'hinwand', 'chat', 'kalender'];
             collections.forEach(colName => {
                 try {
                     const colRef = collection(db, 'artifacts', appId, 'public', 'data', colName);
@@ -172,6 +199,13 @@ html
                         snapshot.forEach(d => {
                             items.push({ id: d.id, ...d.data() });
                         });
+                        
+                        if (window.appData[colName] && items.length > window.appData[colName].length) {
+                            if (window.notificationSettings && window.notificationSettings[colName]) {
+                                showToast(`Neue Aktivität in ${getTabTitle(colName)}!`);
+                            }
+                        }
+
                         if (items.length > 0 || snapshot.size >= 0) {
                             window.appData[colName] = items;
                             renderApp();
@@ -185,16 +219,24 @@ html
             });
         }
 
+        function getTabTitle(colName) {
+            switch(colName) {
+                case 'checkin': return 'Check In';
+                case 'hinwand': return 'Offizielle Bekanntmachungen';
+                case 'pinwand': return 'Marktplatz';
+                case 'schwarzesbrett': return 'Schwarzes Brett';
+                case 'chat': return 'Dorf-Chat';
+                case 'kalender': return 'Terminkalender';
+                default: return 'Dorf-App';
+            }
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             updateAdminUI();
             renderApp();
         });
 
         window.switchTab = function(tabName) {
-            if (tabName === 'admin' && !window.isAdmin) {
-                document.getElementById('admin-modal').classList.remove('hidden');
-                return;
-            }
             window.currentTab = tabName;
             document.querySelectorAll('.tab-btn').forEach(btn => {
                 if (btn.dataset.tab === tabName) {
@@ -212,8 +254,8 @@ html
                     window.isAdmin = false;
                     localStorage.setItem('dorf_is_admin', 'false');
                     updateAdminUI();
-                    if(window.currentTab === 'admin') switchTab('checkin');
                     showToast("Admin-Modus beendet");
+                    renderApp();
                 }
             } else {
                 document.getElementById('admin-modal').classList.remove('hidden');
@@ -233,20 +275,17 @@ html
                 closeAdminModal();
                 updateAdminUI();
                 showToast("Admin-Bereich erfolgreich entsperrt!");
-                switchTab('admin');
+                renderApp();
             } else {
                 showToast("Falsches Passwort!", "error");
             }
         }
 
         window.updateAdminUI = function() {
-            const adminTabBtn = document.getElementById('admin-tab-btn');
             const adminBtnText = document.getElementById('admin-btn-text');
             if (window.isAdmin) {
-                if(adminTabBtn) adminTabBtn.classList.remove('hidden');
                 if(adminBtnText) adminBtnText.textContent = "Admin Aktiv";
             } else {
-                if(adminTabBtn) adminTabBtn.classList.add('hidden');
                 if(adminBtnText) adminBtnText.textContent = "Admin";
             }
         }
@@ -277,9 +316,9 @@ html
 
             switch(window.currentTab) {
                 case 'checkin': container.innerHTML = renderCheckinView(); break;
+                case 'hinwand': container.innerHTML = renderHinwandView(); break;
                 case 'pinwand': container.innerHTML = renderPinwandView(); break;
                 case 'schwarzesbrett': container.innerHTML = renderSchwarzesBrettView(); break;
-                case 'hinwand': container.innerHTML = renderHinwandView(); break;
                 case 'chat':
                     container.innerHTML = renderChatView();
                     setTimeout(() => {
@@ -288,48 +327,69 @@ html
                     }, 50);
                     break;
                 case 'kalender': container.innerHTML = renderKalenderView(); break;
-                case 'admin': container.innerHTML = renderAdminView(); break;
+                case 'pushsettings': container.innerHTML = renderPushSettingsView(); break;
                 default: container.innerHTML = renderCheckinView();
             }
         }
 
         function renderCheckinView() {
-            const list = window.appData.checkins || [];
+            const allCheckins = window.appData.checkins || [];
+            const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
+            const activeList = allCheckins.filter(item => item.timestamp >= twentyFourHoursAgo);
+            const existingUserCheckin = allCheckins.find(item => item.nickname.toLowerCase() === window.userNickname.toLowerCase());
+
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Dorf-Checkin</h2>
-                        <p class="text-xs text-slate-500 mb-6">Trage dich mit Namen ein, damit die Dorfgemeinschaft weiß, wer anwesend ist.</p>
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Check In</h2>
+                        <p class="text-xs text-slate-500 mb-6">Tragen Sie Ihren aktuellen Status ein oder checken Sie aus.</p>
+                        
                         <form onsubmit="submitCheckin(event)" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name / Nickname</label>
-                                <input type="text" id="checkin-nickname" placeholder="z.B. Anna Müller..." value="${escapeHtml(window.userNickname)}" required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                ${window.isCheckedIn && window.userNickname ? `
+                                    <div class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-semibold flex justify-between items-center">
+                                        <span>${escapeHtml(window.userNickname)}</span>
+                                        <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Angemeldet</span>
+                                    </div>
+                                    <input type="hidden" id="checkin-nickname" value="${escapeHtml(window.userNickname)}">
+                                ` : `
+                                    <input type="text" id="checkin-nickname" value="${escapeHtml(window.userNickname)}" placeholder="z.B. Anna Müller..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                `}
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Status / Aktivität</label>
-                                <input type="text" id="checkin-status" placeholder="z.B. Im Garten..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Status / Aktivität (optional)</label>
+                                <input type="text" id="checkin-status" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.status || '') : ''}" placeholder="z.B. Im Garten..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
                             </div>
                             <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ort im Dorf</label>
-                                <input type="text" id="checkin-location" placeholder="z.B. Dorfplatz..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ort im Dorf (optional)</label>
+                                <input type="text" id="checkin-location" value="${existingUserCheckin ? escapeHtml(existingUserCheckin.location || '') : ''}" placeholder="z.B. Dorfplatz..." class="w-full text-sm p-3 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-slate-50">
                             </div>
-                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                <i class="fa-solid fa-check mr-2"></i>Einchecken
-                            </button>
+                            <div class="flex gap-2">
+                                <button type="submit" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                    <i class="fa-solid fa-check mr-2"></i>${window.isCheckedIn ? 'Status Aktualisieren' : 'Jetzt Einchecken'}
+                                </button>
+                                ${window.isCheckedIn ? `
+                                    <button type="button" onclick="checkoutUser()" class="px-4 py-3 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-semibold rounded-xl transition" title="Auschecken">
+                                        <i class="fa-solid fa-right-from-bracket"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
                         </form>
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-users text-emerald-600 mr-2"></i>Aktive Bewohner (${list.length})</h2>
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-users text-emerald-600 mr-2"></i>Aktive Bewohner Online (${activeList.length})</h2>
                         <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Aktuell hat sich niemand eingecheckt.</p>' :
-                                list.map(item => `
+                            ${activeList.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Aktuell ist niemand online eingecheckt.</p>' :
+                                activeList.map(item => `
                                     <div class="p-4 rounded-xl border border-slate-100 bg-slate-50 flex justify-between items-center">
                                         <div>
                                             <div class="flex items-center space-x-2">
+                                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
                                                 <span class="font-bold text-sm text-slate-800">${escapeHtml(item.nickname)}</span>
-                                                <span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">${escapeHtml(item.status)}</span>
+                                                ${item.status ? `<span class="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-medium">${escapeHtml(item.status)}</span>` : ''}
                                             </div>
-                                            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location || 'Kein Ort')} &bull; ${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                            <p class="text-xs text-slate-500 mt-1"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location || 'Kein Ort angegeben')} &bull; ${new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                         </div>
                                         ${window.isAdmin ? `<button onclick="deleteItem('checkins', '${item.id}')" class="text-red-500 hover:text-red-700 text-xs px-2.5 py-1 rounded-lg bg-red-50 font-medium">Löschen</button>` : ''}
                                     </div>
@@ -343,17 +403,24 @@ html
         window.submitCheckin = async function(e) {
             e.preventDefault();
             const nicknameInput = document.getElementById('checkin-nickname').value.trim();
-            const status = document.getElementById('checkin-status').value.trim();
+            const status = document.getElementById('checkin-status').value.trim() || 'Online';
             const location = document.getElementById('checkin-location').value.trim();
-            if (!nicknameInput || !status) return;
+            if (!nicknameInput) return;
 
             window.userNickname = nicknameInput;
+            window.isCheckedIn = true;
             localStorage.setItem('dorf_nickname', nicknameInput);
+            localStorage.setItem('dorf_is_checked_in', 'true');
 
-            const newItem = { id: 'chk_' + Date.now(), nickname: nicknameInput, status, location, timestamp: Date.now() };
-            window.appData.checkins.unshift(newItem);
-            document.getElementById('checkin-status').value = '';
-            document.getElementById('checkin-location').value = '';
+            const existingIdx = window.appData.checkins.findIndex(i => i.nickname.toLowerCase() === nicknameInput.toLowerCase());
+            const newItem = { id: existingIdx >= 0 ? window.appData.checkins[existingIdx].id : ('chk_' + Date.now()), nickname: nicknameInput, status, location, timestamp: Date.now() };
+            
+            if (existingIdx >= 0) {
+                window.appData.checkins[existingIdx] = newItem;
+            } else {
+                window.appData.checkins.unshift(newItem);
+            }
+
             renderApp();
             showToast("Erfolgreich eingecheckt!");
 
@@ -366,47 +433,74 @@ html
             }
         }
 
+        window.checkoutUser = async function() {
+            window.isCheckedIn = false;
+            localStorage.setItem('dorf_is_checked_in', 'false');
+            window.appData.checkins = window.appData.checkins.filter(i => i.nickname.toLowerCase() !== window.userNickname.toLowerCase());
+            renderApp();
+            showToast("Ausgecheckt.");
+        }
+
         function renderPinwandView() {
             const list = window.appData.pinwand || [];
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-signs-post text-emerald-600 mr-2"></i>Pin-wand</h2>
-                        <p class="text-xs text-slate-500 mb-6">Biete etwas an oder verschenke Gegenstände.</p>
-                        <form onsubmit="submitPinwand(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
-                                <input type="text" id="pin-nickname" placeholder="Ihr Name..." value="${escapeHtml(window.userNickname)}" required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Marktplatz</h2>
+                        <p class="text-xs text-slate-500 mb-6">Biete etwas an, suche oder verschenke Gegenstände.</p>
+                        
+                        ${!window.isCheckedIn ? `
+                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Anzeigen zu erstellen.
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategorie</label>
-                                <select id="pin-category" class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                                    <option value="Biete">Biete</option><option value="Suche">Suche</option><option value="Verschenke">Verschenke</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
-                                <input type="text" id="pin-title" placeholder="z.B. Rasenmäher..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung</label>
-                                <textarea id="pin-desc" rows="3" placeholder="Details..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
-                            </div>
-                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                <i class="fa-solid fa-paper-plane mr-2"></i>Veröffentlichen
-                            </button>
-                        </form>
+                        ` : `
+                            <form onsubmit="submitPinwand(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Kategorie</label>
+                                    <select id="pin-category" class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                        <option value="Biete">Biete</option><option value="Suche">Suche</option><option value="Verschenke">Verschenke</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
+                                    <input type="text" id="pin-title" placeholder="z.B. Rasenmäher..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung</label>
+                                    <textarea id="pin-desc" rows="3" placeholder="Details..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Foto hinzufügen (optional)</label>
+                                    <input type="file" id="pin-image-file" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100">
+                                    <input type="hidden" id="pin-image-base64" value="">
+                                    <div id="image-preview-container" class="mt-2 hidden">
+                                        <img id="image-preview" src="" alt="Vorschau" class="h-24 w-full object-cover rounded-xl border border-slate-200">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                    <i class="fa-solid fa-paper-plane mr-2"></i>Anzeige Veröffentlichen
+                                </button>
+                            </form>
+                        `}
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-emerald-600 mr-2"></i>Inserate</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-2">
-                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center col-span-2">Keine Anzeigen.</p>' :
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-bullhorn text-emerald-600 mr-2"></i>Aktuelle Inserate</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[550px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center col-span-2">Keine Anzeigen vorhanden.</p>' :
                                 list.map(item => `
                                     <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
                                         <div>
-                                            <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${escapeHtml(item.category)}</span>
-                                            <h3 class="font-bold text-sm text-slate-800 mt-2 mb-1">${escapeHtml(item.title)}</h3>
+                                            <div class="flex justify-between items-start mb-2">
+                                                <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800">${escapeHtml(item.category)}</span>
+                                                <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</span>
+                                            </div>
+                                            <h3 class="font-bold text-sm text-slate-800 mb-1">${escapeHtml(item.title)}</h3>
                                             <p class="text-xs text-slate-600 mb-3">${escapeHtml(item.description)}</p>
+                                            ${item.image ? `<div class="mb-3"><img src="${item.image}" alt="Inserat Bild" class="h-36 w-full object-cover rounded-xl border border-slate-200 shadow-sm"></div>` : ''}
                                         </div>
                                         <div class="flex justify-between items-center pt-2 border-t border-slate-200 text-[11px] text-slate-500">
                                             <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
@@ -420,27 +514,38 @@ html
             `;
         }
 
+        window.handleImageUpload = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64 = e.target.result;
+                document.getElementById('pin-image-base64').value = base64;
+                const preview = document.getElementById('image-preview');
+                preview.src = base64;
+                document.getElementById('image-preview-container').classList.remove('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
         window.submitPinwand = async function(e) {
             e.preventDefault();
-            const nickname = document.getElementById('pin-nickname').value.trim();
+            if (!window.isCheckedIn) return;
+            const nickname = window.userNickname;
             const category = document.getElementById('pin-category').value;
             const title = document.getElementById('pin-title').value.trim();
             const description = document.getElementById('pin-desc').value.trim();
-            if (!nickname || !title || !description) return;
+            const image = document.getElementById('pin-image-base64').value || '';
+            if (!title || !description) return;
 
-            window.userNickname = nickname;
-            localStorage.setItem('dorf_nickname', nickname);
-
-            const newItem = { id: 'pin_' + Date.now(), category, title, description, nickname, timestamp: Date.now() };
+            const newItem = { id: 'pin_' + Date.now(), category, title, description, nickname, image, timestamp: Date.now() };
             window.appData.pinwand.unshift(newItem);
-            document.getElementById('pin-title').value = '';
-            document.getElementById('pin-desc').value = '';
             renderApp();
-            showToast("Anzeige veröffentlicht!");
+            showToast("Anzeige erfolgreich veröffentlicht!");
 
             if (db) {
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pinwand'), { category, title, description, nickname, timestamp: newItem.timestamp });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'pinwand'), { category, title, description, nickname, image, timestamp: newItem.timestamp });
                 } catch(e) { console.warn(e); }
             }
         }
@@ -451,36 +556,42 @@ html
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett</h2>
-                        <p class="text-xs text-slate-500 mb-6">Wichtige Hinweise und Fundstücke.</p>
-                        <form onsubmit="submitSchwarzesBrett(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
-                                <input type="text" id="sb-nickname" placeholder="Ihr Name..." value="${escapeHtml(window.userNickname)}" required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                        <p class="text-xs text-slate-500 mb-6">Wichtige Hinweise, Notizen und Fundstücke.</p>
+                        
+                        ${!window.isCheckedIn ? `
+                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Notizen zu verfassen.
                             </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
-                                <input type="text" id="sb-title" placeholder="z.B. Schlüssel gefunden..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Nachricht</label>
-                                <textarea id="sb-desc" rows="4" placeholder="Nachricht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
-                            </div>
-                            <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
-                                <i class="fa-solid fa-thumbtack mr-2"></i>Anheften
-                            </button>
-                        </form>
+                        ` : `
+                            <form onsubmit="submitSchwarzesBrett(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel</label>
+                                    <input type="text" id="sb-title" placeholder="z.B. Schlüssel gefunden..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Nachricht</label>
+                                    <textarea id="sb-desc" rows="4" placeholder="Nachricht..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm">
+                                    <i class="fa-solid fa-thumbtack mr-2"></i>Notiz Anheften
+                                </button>
+                            </form>
+                        `}
                     </div>
                     <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                         <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-clipboard-list text-emerald-600 mr-2"></i>Notizen (${list.length})</h2>
                         <div class="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Keine Notizen.</p>' :
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Keine Notizen vorhanden.</p>' :
                                 list.map(item => `
                                     <div class="p-4 rounded-xl border border-amber-200 bg-amber-50/40 relative">
                                         <h3 class="font-bold text-sm text-slate-900 mb-1">${escapeHtml(item.title)}</h3>
                                         <p class="text-xs text-slate-700 mb-3">${escapeHtml(item.description)}</p>
                                         <div class="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-amber-100">
-                                            <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>
-                                            ${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
+                                            <span>Von: <strong>${escapeHtml(item.nickname)}</strong></span>${window.isAdmin ? `<button onclick="deleteItem('schwarzesbrett', '${item.id}')" class="text-red-500 hover:text-red-700 font-medium">Löschen</button>` : ''}
                                         </div>
                                     </div>
                                 `).join('')}
@@ -492,20 +603,16 @@ html
 
         window.submitSchwarzesBrett = async function(e) {
             e.preventDefault();
-            const nickname = document.getElementById('sb-nickname').value.trim();
+            if (!window.isCheckedIn) return;
+            const nickname = window.userNickname;
             const title = document.getElementById('sb-title').value.trim();
             const description = document.getElementById('sb-desc').value.trim();
-            if (!nickname || !title || !description) return;
-
-            window.userNickname = nickname;
-            localStorage.setItem('dorf_nickname', nickname);
+            if (!title || !description) return;
 
             const newItem = { id: 'sb_' + Date.now(), title, description, nickname, timestamp: Date.now() };
             window.appData.schwarzesbrett.unshift(newItem);
-            document.getElementById('sb-title').value = '';
-            document.getElementById('sb-desc').value = '';
             renderApp();
-            showToast("Notiz geheftet!");
+            showToast("Notiz angeheftet!");
 
             if (db) {
                 try {
@@ -520,8 +627,8 @@ html
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     ${window.isAdmin ? `
                         <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                            <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Hinwand (Admin)</h2>
-                            <p class="text-xs text-slate-500 mb-6">Offizielle Bekanntmachungen für das Dorf.</p>
+                            <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Bekanntmachung erstellen</h2>
+                            <p class="text-xs text-slate-500 mb-6">Offizielle Information für alle Dorfbewohner.</p>
                             <form onsubmit="submitHinwand(event)" class="space-y-4">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-700 mb-1">Überschrift</label>
@@ -538,21 +645,23 @@ html
                         </div>
                     ` : `
                         <div class="bg-amber-50 border border-amber-200 p-6 rounded-2xl flex flex-col justify-center items-center text-center">
-                            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xl mb-3"><i class="fa-solid fa-lock"></i></div>
-                            <h3 class="font-bold text-slate-800 text-base mb-1">Hinwand</h3>
-                            <p class="text-xs text-slate-600">Nur für Administratoren (Passwort im Admin-Bereich).</p>
+                            <div class="w-12 h-12 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xl mb-3"><i class="fa-solid fa-bullhorn"></i></div>
+                            <h3 class="font-bold text-slate-800 text-base mb-1">Offizielle Bekanntmachungen</h3>
+                            <p class="text-xs text-slate-600">Offizielle Mitteilungen der Gemeindeverwaltung. Nur Administratoren können hier Beiträge verfassen.</p>
                         </div>
                     `}
                     <div class="${window.isAdmin ? 'lg:col-span-2' : 'lg:col-span-3'} bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-circle-info text-amber-600 mr-2"></i>Offizielle Bekanntmachungen (${list.length})</h2>
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-circle-info text-amber-600 mr-2"></i>Aktuelle Bekanntmachungen (${list.length})</h2>
                         <div class="space-y-4 max-h-[500px] overflow-y-auto pr-2">
                             ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Keine Bekanntmachungen.</p>' :
                                 list.map(item => `
                                     <div class="p-5 rounded-xl border border-amber-200 bg-amber-50/50">
-                                        <span class="text-xs bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Offiziell</span>
+                                        <div class="flex justify-between items-start">
+                                            <span class="text-xs bg-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full font-bold">Offiziell</span>
+                                            <span class="text-[10px] text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</span>
+                                        </div>
                                         <h3 class="font-bold text-base text-slate-900 mt-2 mb-2">${escapeHtml(item.title)}</h3>
-                                        <p class="text-sm text-slate-700 mb-3">${escapeHtml(item.description)}</p>
-                                        ${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium">Löschen</button>` : ''}
+                                        <p class="text-sm text-slate-700 mb-3">${escapeHtml(item.description)}</p>${window.isAdmin ? `<button onclick="deleteItem('hinwand', '${item.id}')" class="text-red-600 text-xs font-medium">Löschen</button>` : ''}
                                     </div>
                                 `).join('')}
                         </div>
@@ -570,8 +679,6 @@ html
 
             const newItem = { id: 'hw_' + Date.now(), title, description, timestamp: Date.now() };
             window.appData.hinwand.unshift(newItem);
-            document.getElementById('hw-title').value = '';
-            document.getElementById('hw-desc').value = '';
             renderApp();
             showToast("Bekanntmachung veröffentlicht!");
 
@@ -587,15 +694,20 @@ html
             list.sort((a,b) => a.timestamp - b.timestamp);
             return `
                 <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                    <div class="lg:col-span-3 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px]">
+                    <div class="lg:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px]">
                         <h2 class="text-lg font-bold text-slate-800 pb-3 border-b border-slate-100 mb-4"><i class="fa-solid fa-comments text-emerald-600 mr-2"></i>Dorf-Chat</h2>
                         <div id="chat-messages-box" class="flex-1 overflow-y-auto space-y-3 pr-2 mb-4">
                             ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-12 text-center">Noch keine Nachrichten.</p>' :
                                 list.map(item => {
                                     const isSelf = item.nickname === window.userNickname;
+                                    const timeStr = new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+                                    const dateStr = new Date(item.timestamp).toLocaleDateString([], {day: '2-digit', month: '2-digit'});
                                     return `
                                         <div class="flex flex-col ${isSelf ? 'items-end' : 'items-start'}">
-                                            <span class="text-xs font-bold text-slate-700 mb-1">${escapeHtml(item.nickname)}</span>
+                                            <div class="flex items-center space-x-2 mb-1">
+                                                <span class="text-xs font-bold text-slate-700">${escapeHtml(item.nickname)}</span>
+                                                <span class="text-[10px] text-slate-400">${dateStr},${timeStr} Uhr</span>
+                                            </div>
                                             <div class="p-3 rounded-2xl text-sm max-w-md ${isSelf ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-100 text-slate-800 rounded-tl-none'}">
                                                 ${escapeHtml(item.message)}
                                             </div>
@@ -604,17 +716,17 @@ html
                                     `;
                                 }).join('')}
                         </div>
-                        <form onsubmit="submitChatMessage(event)" class="flex flex-col sm:flex-row gap-2 pt-2 border-t border-slate-100">
-                            <input type="text" id="chat-nickname" placeholder="Ihr Name..." value="${escapeHtml(window.userNickname)}" required class="sm:w-48 text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
-                            <input type="text" id="chat-input" placeholder="Nachricht an das Dorf..." required class="flex-1 text-sm p-3 rounded-xl border border-slate-300 bg-slate-50" autocomplete="off">
-                            <button type="submit" class="bg-emerald-600 text-white px-5 py-3 rounded-xl font-medium text-sm"><i class="fa-solid fa-paper-plane"></i></button>
-                        </form>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px]">
-                        <h3 class="text-sm font-bold text-slate-800 mb-3"><i class="fa-solid fa-user-group text-emerald-600 mr-2"></i>Aktiv</h3>
-                        <div class="flex-1 overflow-y-auto space-y-2 pr-1">
-                            <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-xs font-medium text-slate-700">${escapeHtml(window.userNickname || 'Besucher')}</div>
-                        </div>
+                        
+                        ${!window.isCheckedIn ? `
+                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs text-center">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um am Chat teilzunehmen.
+                            </div>
+                        ` : `
+                            <form onsubmit="submitChatMessage(event)" class="flex gap-2 pt-2 border-t border-slate-100">
+                                <input type="text" id="chat-input" placeholder="Nachricht an das Dorf..." required class="flex-1 text-sm p-3 rounded-xl border border-slate-300 bg-slate-50" autocomplete="off">
+                                <button type="submit" class="bg-emerald-600 text-white px-5 py-3 rounded-xl font-medium text-sm"><i class="fa-solid fa-paper-plane"></i></button>
+                            </form>
+                        `}
                     </div>
                 </div>
             `;
@@ -622,16 +734,14 @@ html
 
         window.submitChatMessage = async function(e) {
             e.preventDefault();
-            const nicknameInput = document.getElementById('chat-nickname').value.trim();
+            if (!window.isCheckedIn) return;
             const input = document.getElementById('chat-input');
-            if(!input || !nicknameInput) return;
+            if(!input) return;
             const message = input.value.trim();
             if (!message) return;
 
-            window.userNickname = nicknameInput;
-            localStorage.setItem('dorf_nickname', nicknameInput);
-
-            const newItem = { id: 'chat_' + Date.now(), nickname: nicknameInput, message, timestamp: Date.now() };
+            const nickname = window.userNickname;
+            const newItem = { id: 'chat_' + Date.now(), nickname, message, timestamp: Date.now() };
             window.appData.chat.push(newItem);
             input.value = '';
             renderApp();
@@ -642,46 +752,237 @@ html
 
             if (db) {
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), { nickname: nicknameInput, message, timestamp: newItem.timestamp });
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'chat'), { nickname, message, timestamp: newItem.timestamp });
                 } catch(e) { console.warn(e); }
             }
         }
 
         function renderKalenderView() {
+            const list = window.appData.kalender || [];
+            list.sort((a,b) => new Date(a.date) - new Date(b.date));
+
             return `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h2 class="text-lg font-bold text-slate-800 mb-6"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Terminkalender</h2>
-                    <div class="w-full h-[650px] rounded-xl overflow-hidden border border-slate-200 bg-slate-50">
-                        <iframe src="https://calendar.google.com/calendar/embed?src=de.german%23holiday%45group.v.calendar.google.com&ctz=Europe%2FBerlin" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-calendar-plus text-emerald-600 mr-2"></i>Termin eintragen</h2>
+                        <p class="text-xs text-slate-500 mb-4">Jeder Dorfbewohner kann hier Termine hinzufügen. Diese sind für alle sichtbar.</p>
+                        
+                        <!-- Info zu Google Kalender Freigabe -->
+                        <div class="mb-5 p-3.5 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 space-y-2">
+                            <div class="font-bold flex items-center"><i class="fa-brands fa-google mr-1.5 text-blue-600"></i>Hinweis zu Google Kalender:</div>
+                            <p class="leading-relaxed">Eingetragene Termine lassen sich mit einem Klick auf <strong>"Google"</strong> direkt in Ihren Google-Kalender übertragen. Jeder Termin hat zudem einen <strong>iCal-Export</strong>.</p>
+                        </div>
+
+                        ${!window.isCheckedIn ? `
+                            <div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs mb-4">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Bitte checken Sie zuerst im <a href="#" onclick="switchTab('checkin'); return false;" class="underline font-bold">Check In</a> ein, um Termine zu erstellen.
+                            </div>
+                        ` : `
+                            <form onsubmit="submitKalender(event)" class="space-y-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ihr Name</label>
+                                    <input type="text" value="${escapeHtml(window.userNickname)}" disabled class="w-full text-sm p-3 rounded-xl border border-slate-200 bg-slate-100 text-slate-600 font-medium">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Titel der Veranstaltung</label>
+                                    <input type="text" id="cal-title" placeholder="z.B. Feuerwehr-Übung..." required class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Datum</label>
+                                        <input type="date" id="cal-date" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-slate-700 mb-1">Uhrzeit</label>
+                                        <input type="time" id="cal-time" required class="w-full text-xs p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ort</label>
+                                    <input type="text" id="cal-location" placeholder="z.B. Gerätehaus..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">Beschreibung / Details</label>
+                                    <textarea id="cal-desc" rows="3" placeholder="Beschreibung..." class="w-full text-sm p-3 rounded-xl border border-slate-300 bg-slate-50"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold transition shadow-sm cursor-pointer">
+                                    <i class="fa-solid fa-calendar-check mr-2"></i>Termin Speichern
+                                </button>
+                            </form>
+                        `}
+                    </div>
+                    <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-lg font-bold text-slate-800 mb-4"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Anstehende Dorf-Termine (${list.length})</h2>
+                        <div class="space-y-4 max-h-[550px] overflow-y-auto pr-2">
+                            ${list.length === 0 ? '<p class="text-slate-400 text-sm italic py-8 text-center">Keine Termine eingetragen.</p>' :
+                                list.map(item => `
+                                    <div class="p-4 rounded-xl border border-slate-200 bg-slate-50 flex flex-col md:flex-row justify-between items-start gap-4">
+                                        <div class="space-y-1 flex-1">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full"><i class="fa-solid fa-calendar mr-1"></i>${escapeHtml(item.date)}${item.time ? 'um ' + escapeHtml(item.time) : ''}</span>
+                                            </div>
+                                            <h3 class="font-bold text-sm text-slate-900">${escapeHtml(item.title)}</h3>${item.location ? `<p class="text-xs text-slate-600"><i class="fa-solid fa-location-dot mr-1 text-slate-400"></i>${escapeHtml(item.location)}</p>` : ''}
+                                            ${item.description ? `<p class="text-xs text-slate-500 mt-1">${escapeHtml(item.description)}</p>` : ''}
+                                            <p class="text-[10px] text-slate-400 pt-1">Eingetragen von: ${escapeHtml(item.nickname)}</p>
+                                        </div>
+                                        <div class="flex flex-col sm:flex-row gap-2 w-full md:w-auto shrink-0">
+                                            <button type="button" onclick="addToGoogleCalendar('${item.id}')" class="px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-medium rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                                <i class="fa-brands fa-google"></i><span>Google</span>
+                                            </button>
+                                            <button type="button" onclick="downloadIcal('${item.id}')" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium rounded-xl transition flex items-center justify-center space-x-1.5 cursor-pointer">
+                                                <i class="fa-solid fa-download"></i><span>iCal (.ics)</span>
+                                            </button>
+                                            ${window.isAdmin ? `<button type="button" onclick="deleteItem('kalender', '${item.id}')" class="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-medium rounded-xl transition cursor-pointer">Löschen</button>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        function renderAdminView() {
-            if (!window.isAdmin) return `<div class="p-8 text-center text-slate-500">Bitte im Admin-Bereich anmelden.</div>`;
+        window.submitKalender = async function(e) {
+            e.preventDefault();
+            if (!window.isCheckedIn) return;
+            const nickname = window.userNickname;
+            const titleElement = document.getElementById('cal-title');
+            const dateElement = document.getElementById('cal-date');
+            const timeElement = document.getElementById('cal-time');
+            const locationElement = document.getElementById('cal-location');
+            const descElement = document.getElementById('cal-desc');
+
+            if (!titleElement || !dateElement) return;
+
+            const title = titleElement.value.trim();
+            const date = dateElement.value;
+            const time = timeElement ? timeElement.value : '';
+            const location = locationElement ? locationElement.value.trim() : '';
+            const description = descElement ? descElement.value.trim() : '';
+
+            if (!title || !date) return;
+
+            const newItem = { id: 'kal_' + Date.now(), title, date, time, location, description, nickname, timestamp: Date.now() };
+            if (!window.appData.kalender) window.appData.kalender = [];
+            window.appData.kalender.push(newItem);
+            renderApp();
+            showToast("Termin erfolgreich eingetragen!");
+
+            if (db) {
+                try {
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'kalender'), { title, date, time, location, description, nickname, timestamp: newItem.timestamp });
+                } catch(e) { console.warn("Kalender cloud note:", e); }
+            }
+        }
+
+        function getCalendarItem(id) {
+            return (window.appData.kalender || []).find(item => item.id === id);
+        }
+
+        window.addToGoogleCalendar = function(id) {
+            const item = getCalendarItem(id);
+            if (!item) return;
+
+            const title = encodeURIComponent(item.title);
+            const details = encodeURIComponent((item.description || '') + (item.nickname ? `\nEingetragen von: ${item.nickname}` : ''));
+            const location = encodeURIComponent(item.location || '');
+            
+            const datePart = item.date.replace(/-/g, '');
+            const timePart = item.time ? item.time.replace(/:/g, '') + '00' : '120000';
+            const startDateTime = `${datePart}T${timePart}`;
+            
+            let endDateTime = startDateTime;
+            if (item.time) {
+                const [hours, minutes] = item.time.split(':');
+                const endHours = String(Number(hours) + 1).padStart(2, '0');
+                endDateTime = `${datePart}T${endHours}${minutes}00`;
+            } else {
+                endDateTime = `${datePart}T130000`;
+            }
+
+            const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDateTime}/${endDateTime}&details=${details}&location=${location}`;
+            
+            window.open(googleUrl, '_blank');
+            showToast("Google Kalender geöffnet!");
+        };
+
+        window.downloadIcal = function(id) {
+            const item = getCalendarItem(id);
+            if (!item) return;
+
+            const datePart = item.date.replace(/-/g, '');
+            const timePart = item.time ? item.time.replace(/:/g, '') + '00' : '120000';
+            const startStr = `${datePart}T${timePart}`;
+            
+            let endStr = startStr;
+            if (item.time) {
+                const [hours, minutes] = item.time.split(':');
+                const endHours = String(Number(hours) + 1).padStart(2, '0');
+                endStr = `${datePart}T${endHours}${minutes}00`;
+            } else {
+                endStr = `${datePart}T130000`;
+            }
+
+            const icsContent = [
+                "BEGIN:VCALENDAR",
+                "VERSION:2.0",
+                "PRODID:-//Dorf-App//Gemeinschaftskalender//DE",
+                "BEGIN:VEVENT",
+                `UID:dorfapp-${item.id}@local`,
+                `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`,
+                `DTSTART:${startStr}`,
+                `DTEND:${endStr}`,
+                `SUMMARY:${item.title}`,
+                `DESCRIPTION:${item.description || ''} (Eingetragen von ${item.nickname || 'Unbekannt'})`,
+                `LOCATION:${item.location || ''}`,
+                "END:VEVENT",
+                "END:VCALENDAR"
+            ].join("\r\n");
+
+            // Verwende Data-URI als zuverlässigen Fallback für den Download
+            const encodedUri = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(icsContent);
+            const link = document.createElement('a');
+            link.setAttribute('href', encodedUri);
+            const fileName = `${item.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.ics`;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showToast(`iCal-Datei heruntergeladen (${fileName})!`);
+        };
+
+        function renderPushSettingsView() {
             return `
-                <div class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-lg font-bold text-slate-800"><i class="fa-solid fa-gears text-amber-500 mr-2"></i>Admin-Steuerungszentrale</h2>
-                            <p class="text-xs text-slate-500">Besucherstatistik & Moderation</p>
-                        </div>
-                        <div class="bg-amber-50 border border-amber-200 px-6 py-4 rounded-xl text-center">
-                            <p class="text-xs font-semibold text-amber-900">Besucher</p>
-                            <p class="text-2xl font-black text-amber-700">${window.appData.visitors}</p>
-                        </div>
-                    </div>
-                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                        <h3 class="font-bold text-sm text-slate-800 mb-3">Chat-Moderation (${window.appData.chat.length})</h3>
-                        <div class="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                            ${window.appData.chat.map(item => `
-                                <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl text-xs">
-                                    <span><strong>${escapeHtml(item.nickname)}</strong>: ${escapeHtml(item.message)}</span>
-                                    <button onclick="deleteItem('chat', '${item.id}')" class="text-red-600 font-medium px-2 py-1 bg-red-50 rounded">Löschen</button>
-                                </div>
-                            `).join('')}
-                        </div>
+                <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-bold text-slate-800 mb-2"><i class="fa-solid fa-bell text-emerald-600 mr-2"></i>Push-Benachrichtigungen verwalten</h2>
+                    <p class="text-xs text-slate-500 mb-6">Wählen Sie aus, für welche Bereiche der Dorf-App Sie Benachrichtigungen erhalten möchten:</p>
+                    
+                    <div class="space-y-4 text-sm">
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-clipboard-check text-emerald-600 mr-2"></i>Check In Aktivitäten</span>
+                            <input type="checkbox" id="notif-checkin" ${window.notificationSettings.checkin ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-bullhorn text-amber-600 mr-2"></i>Offizielle Bekanntmachungen</span>
+                            <input type="checkbox" id="notif-hinwand" ${window.notificationSettings.hinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="flex items-center font-medium text-slate-700"><i class="fa-solid fa-store text-emerald-600 mr-2"></i>Marktplatz Inserate</span>
+                            <input type="checkbox" id="notif-pinwand" ${window.notificationSettings.pinwand ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-height p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-note-sticky text-emerald-600 mr-2"></i>Schwarzes Brett Notizen</span>
+                            <input type="checkbox" id="notif-schwarzesbrett" ${window.notificationSettings.schwarzesbrett ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-comments text-emerald-600 mr-2"></i>Dorf-Chat Nachrichten</span>
+                            <input type="checkbox" id="notif-chat" ${window.notificationSettings.chat ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
+                        <label class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50 cursor-pointer hover:bg-slate-100 transition">
+                            <span class="font-medium text-slate-700 flex items-center"><i class="fa-solid fa-calendar-days text-emerald-600 mr-2"></i>Terminkalender Einträge</span>
+                            <input type="checkbox" id="notif-kalender" ${window.notificationSettings.kalender ? 'checked' : ''} onchange="saveNotificationSettings()" class="rounded text-emerald-600 focus:ring-emerald-500 w-5 h-5">
+                        </label>
                     </div>
                 </div>
             `;
@@ -689,4 +990,3 @@ html
     </script>
 </body>
 </html>
-```
