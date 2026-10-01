@@ -718,6 +718,14 @@
                 event.target.value = '';
                 return;
             }
+            
+            // Maximale Dateigröße auf ca. 700 KB prüfen (Firestore Limit liegt bei 1 MB pro Dokument)
+            if (file.size > 700 * 1024) {
+                showToast("Die PDF-Datei ist zu groß (max. 700 KB erlaubt, um Speicherfehler zu vermeiden).", "error");
+                event.target.value = '';
+                return;
+            }
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const base64 = e.target.result;
@@ -740,14 +748,39 @@
             if (!title || !description) return;
 
             const newItem = { id: 'hw_' + Date.now(), title, description, pdfName, pdfData, timestamp: Date.now() };
+            
+            // Direkt im lokalen State sichern und sofort rendern
             window.appData.hinwand.unshift(newItem);
             renderApp();
             showToast("Bekanntmachung veröffentlicht!");
 
+            // Formular zurücksetzen
+            const titleEl = document.getElementById('hw-title');
+            const descEl = document.getElementById('hw-desc');
+            const pdfFileEl = document.getElementById('hw-pdf-file');
+            if(titleEl) titleEl.value = '';
+            if(descEl) descEl.value = '';
+            if(pdfFileEl) pdfFileEl.value = '';
+            const pdfBase64El = document.getElementById('hw-pdf-base64');
+            const pdfNameEl = document.getElementById('hw-pdf-name');
+            const pdfLabelEl = document.getElementById('pdf-selected-label');
+            if(pdfBase64El) pdfBase64El.value = '';
+            if(pdfNameEl) pdfNameEl.value = '';
+            if(pdfLabelEl) pdfLabelEl.classList.add('hidden');
+
             if (db) {
                 try {
-                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hinwand'), { title, description, pdfName, pdfData, timestamp: newItem.timestamp });
-                } catch(e) { console.warn(e); }
+                    await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'hinwand'), { 
+                        title, 
+                        description, 
+                        pdfName: pdfName || '', 
+                        pdfData: pdfData || '', 
+                        timestamp: newItem.timestamp 
+                    });
+                } catch(e) { 
+                    console.warn("Cloud save note for hinwand:", e); 
+                    showToast("Hinweis: In der Cloud konnte die PDF aufgrund der Größe evtl. nicht persistiert werden, lokal ist sie gespeichert.", "error");
+                }
             }
         }
 
